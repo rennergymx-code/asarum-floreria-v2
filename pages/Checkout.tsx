@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { GoogleMap, useJsApiLoader, Marker, Autocomplete } from '@react-google-maps/api';
 import { CartItem, Order } from '../types';
 import { AnalyticsService } from '../services/analytics';
+import { supabase } from '../lib/supabase';
 
 interface CheckoutProps {
   cart: CartItem[];
@@ -89,10 +90,11 @@ const Checkout: React.FC<CheckoutProps> = ({ cart, onPlaceOrder, onClearCart }) 
     e.preventDefault();
     setLoading(true);
 
-    setTimeout(() => {
+    const performOrder = async () => {
+      const orderId = `AS-${Math.floor(1000 + Math.random() * 9000)}`;
       const newOrder: Order = {
-        id: `AS-${Math.floor(1000 + Math.random() * 9000)}`,
-        date: new Date().toLocaleDateString('es-MX'),
+        id: orderId,
+        date: new Date().toISOString(), // Use ISO for database consistency
         items: [...cart],
         total,
         senderName: form.senderName,
@@ -107,17 +109,47 @@ const Checkout: React.FC<CheckoutProps> = ({ cart, onPlaceOrder, onClearCart }) 
         gateCode: form.deliveryType === 'delivery' ? form.gateCode : undefined,
         qrAccess: form.deliveryType === 'delivery' ? form.qrAccess : undefined,
         cardMessage: form.cardMessage,
-        status: 'Pendiante',
+        status: 'Pendiente',
         paymentStatus: 'paid'
       };
 
-      onPlaceOrder(newOrder);
-      AnalyticsService.trackPurchase(newOrder.id, total, cart);
-      setLoading(false);
-      onClearCart();
-      alert('¡Gracias por tu compra! Tu pedido ha sido recibido y nos contactaremos contigo por WhatsApp.');
-      navigate('/');
-    }, 2000);
+      try {
+        const { error } = await supabase.from('orders').insert([{
+          id: newOrder.id,
+          items: newOrder.items,
+          total: newOrder.total,
+          sender_name: newOrder.senderName,
+          sender_phone: newOrder.senderPhone,
+          sender_email: newOrder.senderEmail,
+          receiver_name: newOrder.receiverName,
+          receiver_phone: newOrder.receiverPhone,
+          delivery_address: newOrder.deliveryAddress,
+          delivery_coords: newOrder.deliveryCoords,
+          delivery_type: newOrder.deliveryType,
+          pickup_branch: newOrder.pickupBranch,
+          gate_code: newOrder.gateCode,
+          qr_access: newOrder.qrAccess,
+          card_message: newOrder.cardMessage,
+          status: newOrder.status,
+          payment_status: newOrder.paymentStatus
+        }]);
+
+        if (error) throw error;
+
+        onPlaceOrder(newOrder);
+        AnalyticsService.trackPurchase(newOrder.id, total, cart);
+        onClearCart();
+        alert('¡Gracias por tu compra! Tu pedido ha sido recibido y nos contactaremos contigo por WhatsApp.');
+        navigate('/');
+      } catch (err) {
+        console.error('Error saving order:', err);
+        alert('Hubo un error al procesar tu pedido. Por favor intenta de nuevo.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    performOrder();
   };
 
   if (cart.length === 0) return null;

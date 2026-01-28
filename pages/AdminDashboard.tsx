@@ -1,6 +1,6 @@
-
 import React, { useState } from 'react';
 import { Product, Order, Season } from '../types';
+import { supabase } from '../lib/supabase';
 
 interface AdminDashboardProps {
   products: Product[];
@@ -147,12 +147,26 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ products, orders, setPr
   const newOrders = currentOrders.filter(o => o.status !== 'Entregado');
   const deliveredOrders = currentOrders.filter(o => o.status === 'Entregado');
 
-  const updateOrderStatus = (orderId: string, newStatus: Order['status']) => {
+  const updateOrderStatus = async (orderId: string, newStatus: Order['status']) => {
     if (isDemoMode) {
       setDemoOrdersState(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
     } else {
-      // In real scenario, this would call a Supabase function or API
-      console.log(`Updating order ${orderId} to ${newStatus}`);
+      try {
+        const { error } = await supabase
+          .from('orders')
+          .update({ status: newStatus })
+          .eq('id', orderId);
+        if (error) throw error;
+
+        // Update local state by refetching or manual filter
+        const updatedOrders = orders.map(o => o.id === orderId ? { ...o, status: newStatus } : o);
+        // Assuming setOrders is passed as prop or handled via parent refresh
+        // For now we rely on the parent Refresh as per App.tsx structure
+        window.location.reload(); // Quick refresh to sync all
+      } catch (err) {
+        console.error('Error updating status:', err);
+        alert('Error al actualizar el estado.');
+      }
     }
   };
 
@@ -174,32 +188,75 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ products, orders, setPr
     });
   };
 
-  const handleSaveProduct = (e: React.FormEvent) => {
+  const handleSaveProduct = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (isAddingProduct) {
-      setProducts([...products, formState as Product]);
-    } else {
-      setProducts(products.map(p => p.id === editingProduct?.id ? { ...p, ...formState } : p));
-    }
-    setEditingProduct(null);
-    setIsAddingProduct(false);
-  };
+    const productData = formState as Product;
 
-  const toggleProductSeason = (productId: string, seasonId: Season) => {
-    setProducts(products.map(p => {
-      if (p.id === productId) {
-        const currentSeasons = p.seasons || [];
-        const newSeasons = currentSeasons.includes(seasonId)
-          ? currentSeasons.filter(s => s !== seasonId)
-          : [...currentSeasons, seasonId];
-        return { ...p, seasons: newSeasons.length > 0 ? newSeasons : [Season.DEFAULT] };
+    try {
+      const payload = {
+        id: productData.id,
+        name: productData.name,
+        description: productData.description,
+        base_price: productData.basePrice,
+        category: productData.category,
+        images: productData.images,
+        variants: productData.variants || [],
+        notes: productData.notes || '',
+        seasons: productData.seasons
+      };
+
+      if (isAddingProduct) {
+        const { error } = await supabase.from('products').insert([payload]);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from('products').update(payload).eq('id', editingProduct?.id);
+        if (error) throw error;
       }
-      return p;
-    }));
+
+      window.location.reload();
+    } catch (err) {
+      console.error('Error saving product:', err);
+      alert('Error al guardar el producto.');
+    } finally {
+      setEditingProduct(null);
+      setIsAddingProduct(false);
+    }
   };
 
-  const updateProductPrice = (productId: string, price: number) => {
-    setProducts(products.map(p => p.id === productId ? { ...p, basePrice: price } : p));
+  const toggleProductSeason = async (productId: string, seasonId: Season) => {
+    const p = products.find(prod => prod.id === productId);
+    if (!p) return;
+
+    const currentSeasons = p.seasons || [];
+    const newSeasons = currentSeasons.includes(seasonId)
+      ? currentSeasons.filter(s => s !== seasonId)
+      : [...currentSeasons, seasonId];
+
+    const finalSeasons = newSeasons.length > 0 ? newSeasons : [Season.DEFAULT];
+
+    try {
+      const { error } = await supabase
+        .from('products')
+        .update({ seasons: finalSeasons })
+        .eq('id', productId);
+      if (error) throw error;
+      window.location.reload();
+    } catch (err) {
+      console.error('Error updating seasons:', err);
+    }
+  };
+
+  const updateProductPrice = async (productId: string, price: number) => {
+    try {
+      const { error } = await supabase
+        .from('products')
+        .update({ base_price: price })
+        .eq('id', productId);
+      if (error) throw error;
+      window.location.reload();
+    } catch (err) {
+      console.error('Error updating price:', err);
+    }
   };
 
   const SEASONS_CONFIG = [

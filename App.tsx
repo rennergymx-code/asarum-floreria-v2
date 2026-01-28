@@ -17,6 +17,8 @@ import { INITIAL_PRODUCTS } from './constants';
 import CookieBanner from './components/CookieBanner';
 import ScrollToTop from './components/ScrollToTop';
 import { AnalyticsService } from './services/analytics';
+import { supabase } from './lib/supabase';
+import { seedDatabase } from './seed';
 
 const AppContent: React.FC<{
   products: Product[];
@@ -151,6 +153,70 @@ const App: React.FC = () => {
     localStorage.setItem('asarum_season', currentSeason);
     localStorage.setItem('asarum_is_admin', String(isAdmin));
   }, [products, cart, orders, currentSeason, isAdmin]);
+
+  // Supabase Initialization
+  useEffect(() => {
+    const initSupabase = async () => {
+      // 1. Seed if empty (First time setup)
+      const { data: existingProducts } = await supabase.from('products').select('id').limit(1);
+      if (!existingProducts || existingProducts.length === 0) {
+        await seedDatabase();
+      }
+
+      // 2. Fetch Products
+      const { data: sbProducts, error: pError } = await supabase
+        .from('products')
+        .select('*');
+
+      if (sbProducts && !pError) {
+        const mappedProducts: Product[] = sbProducts.map(p => ({
+          id: p.id,
+          name: p.name,
+          description: p.description,
+          basePrice: Number(p.base_price),
+          category: p.category,
+          images: p.images,
+          variants: p.variants,
+          notes: p.notes,
+          seasons: p.seasons as Season[]
+        }));
+        setProducts(mappedProducts);
+      }
+
+      // 3. Fetch Orders (Admin only or for public lookup if needed)
+      const { data: sbOrders, error: oError } = await supabase
+        .from('orders')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (sbOrders && !oError) {
+        const mappedOrders: Order[] = sbOrders.map(o => ({
+          id: o.id,
+          date: o.created_at,
+          items: o.items,
+          total: Number(o.total),
+          senderName: o.sender_name,
+          senderPhone: o.sender_phone,
+          senderEmail: o.sender_email,
+          receiverName: o.receiver_name,
+          receiverPhone: o.receiver_phone,
+          deliveryAddress: o.delivery_address,
+          deliveryCoords: o.delivery_coords,
+          deliveryType: o.delivery_type as 'delivery' | 'pickup',
+          pickupBranch: o.pickup_branch,
+          gateCode: o.gate_code,
+          qrAccess: o.qr_access,
+          cardMessage: o.card_message,
+          status: o.status as any,
+          paymentStatus: o.payment_status as any,
+          stripePaymentIntentId: o.stripe_payment_id
+        }));
+        setOrders(mappedOrders);
+      }
+    };
+
+    initSupabase();
+  }, []);
 
   return (
     <Router>
