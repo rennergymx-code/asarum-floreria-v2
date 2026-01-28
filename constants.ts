@@ -51,7 +51,7 @@ export const INITIAL_PRODUCTS: Product[] = [
     name: 'Laura',
     description: 'Impresionante arreglo de rosas rojas.',
     basePrice: 4500,
-    images: ['/products/laura.jpg'],
+    images: ['/products/laura.png'],
     category: 'Arreglos Grandes',
     variants: [
       { name: '100 ROSAS', price: 4500 },
@@ -164,7 +164,7 @@ export const INITIAL_PRODUCTS: Product[] = [
     name: 'Emilia',
     description: 'Elegante florero con mix premium de flores.',
     basePrice: 6000,
-    images: ['/products/emilia.jpg'],
+    images: ['/products/emilia.png'],
     category: 'Floreros',
     variants: [
       { name: 'ÚNICO TAMAÑO', price: 6000 }
@@ -177,7 +177,7 @@ export const INITIAL_PRODUCTS: Product[] = [
     name: 'Mariana',
     description: 'Caja espectacular con variedad de flores.',
     basePrice: 20000,
-    images: ['/products/mariana.jpg'],
+    images: ['/products/mariana.png'],
     category: 'Cajas Premium',
     variants: [
       { name: 'ÚNICO TAMAÑO', price: 20000 }
