@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { Product, Season } from '../types';
 
 interface HomeProps {
@@ -12,6 +12,28 @@ const Home: React.FC<HomeProps> = ({ products, season }) => {
   const isValentines = season === Season.VALENTINES;
   const isMothersDay = season === Season.MOTHERS_DAY;
   const [budgetRange, setBudgetRange] = React.useState<string>('all');
+  const location = useLocation();
+
+  const performScrollToCatalog = () => {
+    const element = document.getElementById('catalogo');
+    if (element) {
+      const offset = 80;
+      const bodyRect = document.body.getBoundingClientRect().top;
+      const elementRect = element.getBoundingClientRect().top;
+      const elementPosition = elementRect - bodyRect;
+      const offsetPosition = elementPosition - offset;
+      window.scrollTo({
+        top: offsetPosition,
+        behavior: 'smooth'
+      });
+    }
+  };
+
+  React.useEffect(() => {
+    if (window.location.hash === '#catalogo') {
+      setTimeout(performScrollToCatalog, 150);
+    }
+  }, [location]);
 
   const filteredProducts = products.filter(product => {
     // Season filter
@@ -32,19 +54,7 @@ const Home: React.FC<HomeProps> = ({ products, season }) => {
 
   const scrollToCatalog = (e: React.MouseEvent) => {
     e.preventDefault();
-    const element = document.getElementById('catalogo');
-    if (element) {
-      const offset = 80; // Account for sticky navbar
-      const bodyRect = document.body.getBoundingClientRect().top;
-      const elementRect = element.getBoundingClientRect().top;
-      const elementPosition = elementRect - bodyRect;
-      const offsetPosition = elementPosition - offset;
-
-      window.scrollTo({
-        top: offsetPosition,
-        behavior: 'smooth'
-      });
-    }
+    performScrollToCatalog();
   };
 
   const themeColors = {

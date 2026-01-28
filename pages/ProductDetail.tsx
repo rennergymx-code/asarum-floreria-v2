@@ -75,7 +75,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ products, onAddToCart }) 
         {/* Info - Mobile Priority */}
         <div className="lg:w-1/2 flex flex-col pt-4">
           <nav className="mb-6 flex items-center gap-3">
-            <button onClick={() => navigate('/')} className="text-[10px] font-black text-asarum-red uppercase tracking-widest hover:underline">catálogo</button>
+            <button onClick={() => navigate('/#catalogo')} className="text-[10px] font-black text-asarum-red uppercase tracking-widest hover:underline">catálogo</button>
             <i className="fa-solid fa-chevron-right text-[8px] text-asarum-slate"></i>
             <span className="text-[10px] font-black text-asarum-slate uppercase tracking-widest">{product.name}</span>
           </nav>
