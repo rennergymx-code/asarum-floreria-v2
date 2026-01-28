@@ -33,7 +33,7 @@ const Home: React.FC<HomeProps> = ({ products, season }) => {
             </div>
           )}
           <h1 className="text-5xl md:text-8xl font-black text-white mb-6 tracking-tight leading-none uppercase drop-shadow-2xl">
-            {isValentines ? 'San Valentín \nPremium' : (
+            {isValentines ? 'San Valentín \n2026' : (
               <>
                 <span className="block text-asarum-red brightness-125">Asarum</span>
                 <span>Florería</span>

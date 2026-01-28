@@ -34,8 +34,7 @@ const Navbar: React.FC<NavbarProps> = ({ cartCount, isAdmin, season }) => {
           <Link to="/" className="flex items-center">
             <img src="/logo.png" alt="Asarum Florería y Regalos" className="h-16 md:h-20 w-auto py-1 object-contain" />
           </Link>
-          Line 35:
-          Line 36:           <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-4">
             <Link to="/cart" className="relative p-2 glass-morphism rounded-full hover:bg-white transition-all">
               <i className="fa-solid fa-basket-shopping text-xl text-asarum-dark"></i>
               {cartCount > 0 && (
