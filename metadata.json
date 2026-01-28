@@ -1,0 +1,7 @@
+{
+  "name": "Asarum Florería y Regalos",
+  "description": "Tienda en línea modernizada para Asarum Florería, con catálogo temático de San Valentín, gestión de pedidos y dashboard administrativo.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}
