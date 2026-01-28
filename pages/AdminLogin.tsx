@@ -22,8 +22,8 @@ const AdminLogin: React.FC<{ setIsAdmin: (val: boolean) => void }> = ({ setIsAdm
     <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-asarum-red/10 to-asarum-pink/20">
       <div className="max-w-md w-full glass-card p-8 md:p-12">
         <div className="text-center mb-10">
-          <h1 className="text-4xl font-extrabold text-asarum-red mb-2">ASARUM</h1>
-          <p className="text-asarum-slate text-xs font-bold uppercase tracking-widest">Admin Access</p>
+          <img src="/logo.png" alt="Asarum Logo" className="h-24 mx-auto mb-4 object-contain" />
+          <p className="text-asarum-slate text-[10px] font-black uppercase tracking-[0.3em]">Acceso Administrativo</p>
         </div>
         <form onSubmit={handleLogin} className="space-y-6">
           <div className="space-y-2">

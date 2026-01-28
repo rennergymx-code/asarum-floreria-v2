@@ -4,6 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/png" href="/favicon.png">
 
   <!-- SEO Meta Tags -->
   <title>Asarum Florería y Regalos | Flores a Domicilio en Hermosillo y SLRC</title>
@@ -53,7 +54,7 @@
     !function (f, b, e, v, n, t, s) {
       if (f.fbq) return; n = f.fbq = function () {
         n.callMethod ?
-        n.callMethod.apply(n, arguments) : n.queue.push(arguments)
+          n.callMethod.apply(n, arguments) : n.queue.push(arguments)
       }; if (!f._fbq) f._fbq = n;
       n.push = n; n.loaded = !0; n.version = '2.0'; n.queue = []; t = b.createElement(e); t.async = !0;
       t.src = v; s = b.getElementsByTagName(e)[0]; s.parentNode.insertBefore(t, s)
@@ -62,22 +63,11 @@
     fbq('init', 'PIXEL_ID_HERE');
     fbq('track', 'PageView');
   </script>
-  <noscript><img height="1" width="1" style="display:none"
-      src="https://www.facebook.com/tr?id=PIXEL_ID_HERE&ev=PageView&noscript=1" /></noscript>
-
-  <script type="importmap">
-    {
-      "imports": {
-        "react/": "https://esm.sh/react@^19.2.4/",
-        "react": "https://esm.sh/react@^19.2.4",
-        "react-router-dom": "https://esm.sh/react-router-dom@^7.13.0",
-        "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
-        "@google/genai": "https://esm.sh/@google/genai@^1.38.0"
-      }
-    }
-    </script>
+</head>
 
 <body class="bg-gray-50">
+  <noscript><img height="1" width="1" style="display:none"
+      src="https://www.facebook.com/tr?id=PIXEL_ID_HERE&ev=PageView&noscript=1" /></noscript>
   <div id="root"></div>
   <script type="module" src="/index.tsx"></script>
 </body>

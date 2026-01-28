@@ -31,8 +31,8 @@ const Navbar: React.FC<NavbarProps> = ({ cartCount, isAdmin, season }) => {
     <nav className="glass-morphism sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-20">
-          <Link to="/" className="flex items-center space-x-2">
-            <span className={`text-2xl font-montserrat font-extrabold tracking-tight transition-colors duration-500 ${getThemeColor()}`}>ASARUM</span>
+          <Link to="/" className="flex items-center">
+            <img src="/logo.png" alt="Asarum Florería y Regalos" className="h-28 w-auto py-2 object-contain" />
           </Link>
 
           <div className="flex items-center space-x-4">

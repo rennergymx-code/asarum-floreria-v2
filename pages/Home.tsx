@@ -32,9 +32,13 @@ const Home: React.FC<HomeProps> = ({ products, season }) => {
               </div>
             </div>
           )}
-          <h1 className="text-5xl md:text-8xl font-black text-white mb-6 tracking-tight leading-none uppercase drop-shadow-2xl">
-            {isValentines ? 'San Valentín \nPremium' : 'Asarum \nFlorería'}
-          </h1>
+          <div className="mb-8">
+            <img
+              src="/logo.png"
+              alt="Asarum Florería y Regalos"
+              className="h-48 md:h-64 w-auto mx-auto brightness-0 invert"
+            />
+          </div>
           <p className="text-lg md:text-xl text-white/90 mb-10 max-w-xl mx-auto leading-relaxed font-medium">
             Arreglos diseñados para perdurar. Envíos exclusivos en Hermosillo y SLRC.
           </p>
