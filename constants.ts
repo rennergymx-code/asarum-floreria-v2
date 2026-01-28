@@ -190,7 +190,7 @@ export const INITIAL_PRODUCTS: Product[] = [
     name: 'Elisa',
     description: 'Hydrangea central acompañada de tulipanes.',
     basePrice: 1850,
-    images: ['/products/elisa.jpg'],
+    images: ['/products/elisa.png'],
     category: 'Floreros',
     variants: [
       { name: 'MEDIANO', price: 1850 },
