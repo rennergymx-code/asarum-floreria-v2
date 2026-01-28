@@ -5,11 +5,10 @@ import { Season } from '../types';
 
 interface NavbarProps {
   cartCount: number;
-  isAdmin: boolean;
   season: Season;
 }
 
-const Navbar: React.FC<NavbarProps> = ({ cartCount, isAdmin, season }) => {
+const Navbar: React.FC<NavbarProps> = ({ cartCount, season }) => {
   const getThemeColor = () => {
     switch (season) {
       case Season.VALENTINES: return 'text-asarum-red';
@@ -43,11 +42,6 @@ const Navbar: React.FC<NavbarProps> = ({ cartCount, isAdmin, season }) => {
                 </span>
               )}
             </Link>
-            {isAdmin && (
-              <Link to="/admin/dashboard" className="bg-asarum-red text-white w-10 h-10 rounded-full flex items-center justify-center shadow-lg active:scale-90 transition-all">
-                <i className="fa-solid fa-user-gear"></i>
-              </Link>
-            )}
           </div>
         </div>
       </div>

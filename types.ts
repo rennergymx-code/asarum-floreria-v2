@@ -20,6 +20,7 @@ export interface Product {
   category: string;
   variants?: ProductVariant[];
   notes?: string;
+  seasons: Season[];
 }
 
 export interface CartItem {
@@ -37,11 +38,17 @@ export interface Order {
   date: string;
   items: CartItem[];
   total: number;
-  customerName: string;
-  customerPhone: string;
-  customerEmail: string; // Required for Stripe
+  senderName: string;
+  senderPhone: string;
+  senderEmail: string;
+  receiverName: string;
+  receiverPhone: string;
   deliveryAddress: string;
   deliveryCoords?: { lat: number; lng: number };
+  deliveryType: 'delivery' | 'pickup';
+  pickupBranch?: 'Hermosillo' | 'San Luis Río Colorado';
+  gateCode?: string;
+  qrAccess?: boolean;
   cardMessage: string;
   status: 'Pendiante' | 'En Camino' | 'Entregado';
   paymentStatus: 'pending' | 'paid' | 'failed';

@@ -11,7 +11,7 @@ const Terms: React.FC = () => {
                     <section>
                         <h2 className="text-xl font-black text-asarum-dark uppercase tracking-wide mb-4">1. Identificación del Titular</h2>
                         <p>
-                            El presente sitio web asarumfloreria.com es operado por <strong>YASODHARA AMPARO ROMERO PANTOJA</strong> (en lo sucesivo "ASARUM FLORERIA Y REGALOS"), con domicilio en Av. Libertad y Calle 12 #1200, Col. Cuauhtémoc, CP 83400, San Luis Río Colorado, Sonora.
+                            El presente sitio web asarumfloreria.com es operado por <strong>YASODHARA AMPARO ROMERO PANTOJA</strong> (en lo sucesivo "ASARUM FLORERIA Y REGALOS"), con domicilio en Cjon. Madero y 6ta, Col. Comercial, CP 83449, San Luis Río Colorado, Sonora.
                         </p>
                     </section>
 

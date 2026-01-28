@@ -15,7 +15,7 @@ const Privacy: React.FC = () => {
                     <section>
                         <h2 className="text-xl font-black text-asarum-dark uppercase tracking-wide mb-4">1. Responsable del Tratamiento</h2>
                         <p>
-                            <strong>YASODHARA AMPARO ROMERO PANTOJA</strong>, con nombre comercial ASARUM FLORERIA Y REGALOS y domicilio en Av. Libertad y Calle 12 #1200, Col. Cuauhtémoc, CP 83400, San Luis Río Colorado, Sonora, es responsable del uso y protección de sus datos personales.
+                            <strong>YASODHARA AMPARO ROMERO PANTOJA</strong>, con nombre comercial ASARUM FLORERIA Y REGALOS y domicilio en Cjon. Madero y 6ta, Col. Comercial, CP 83449, San Luis Río Colorado, Sonora, es responsable del uso y protección de sus datos personales.
                         </p>
                     </section>
 

@@ -17,7 +17,7 @@ const GeminiChat: React.FC<GeminiChatProps> = ({ products, currentSeason }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<Message[]>([
-    { role: 'model', text: '¡Hola! Soy tu asistente inteligente de Asarum. ¿Te gustaría que te ayude a encontrar el regalo perfecto para este San Valentín?' }
+    { role: 'model', text: '¡Hola! Soy Elena de Asarum. ¿En qué puedo ayudarte hoy para encontrar el detalle perfecto?' }
   ]);
   const [loading, setLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -42,7 +42,7 @@ const GeminiChat: React.FC<GeminiChatProps> = ({ products, currentSeason }) => {
 
     if (!genAI) {
       setTimeout(() => {
-        setMessages(prev => [...prev, { role: 'model', text: "Lo siento, el servicio de asesoría no está configurado correctamente (falta API Key). Por favor contacta al administrador." }]);
+        setMessages(prev => [...prev, { role: 'model', text: "Lo siento, Elena no puede responder en este momento (falta configuración). Por favor contacta al administrador." }]);
         setLoading(false);
       }, 1000);
       return;
@@ -52,7 +52,7 @@ const GeminiChat: React.FC<GeminiChatProps> = ({ products, currentSeason }) => {
       const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
       const systemPrompt = `
-        Eres el "Asesor IA" oficial de Asarum Florería y Regalos. Tu objetivo es ayudar a los clientes a elegir el mejor arreglo floral.
+        Eres "Elena", la asesora experta de Asarum Florería y Regalos. Tu objetivo es ayudar a los clientes a elegir el mejor arreglo floral.
         Información importante:
         - Temporada Actual: ${currentSeason}.
         - Si es San Valentín: El 14 de Febrero NO hay horario de entrega garantizado. Las entregas son en el transcurso del día.
@@ -64,11 +64,12 @@ const GeminiChat: React.FC<GeminiChatProps> = ({ products, currentSeason }) => {
       })))}
 
         Reglas de comportamiento:
-        1. Sé amable, elegante y servicial.
-        2. Si el usuario pregunta por un presupuesto (ej. "menos de 1000 pesos"), busca en el catálogo productos cuyo precio inicial sea menor o igual a esa cantidad y recomiéndalos por su nombre.
-        3. Siempre menciona que somos expertos en Hermosillo y SLRC.
-        4. No inventes productos que no estén en la lista.
-        5. Mantén tus respuestas concisas y enfocadas en la venta.
+        1. Sé amable, elegante y servicial. Tu tono debe ser cálido y profesional.
+        2. IMPORTANTE: Siempre pregunta por el presupuesto del cliente de manera sutil si aún no lo ha mencionado, para poder recomendarle la mejor opción.
+        3. Si el usuario menciona un presupuesto o rango, busca en el catálogo productos que se ajusten y recomiéndalos con entusiasmo.
+        4. Siempre menciona que somos expertos en Hermosillo y SLRC. Tenemos más de 30 años de experiencia.
+        5. Nuestra filosofía: "NOSOTROS NO SOLO ELABORAMOS DETALLES, NOSOTROS CREAMOS EMOCIONES".
+        6. No inventes productos.
       `;
 
       const chat = model.startChat({
@@ -81,7 +82,6 @@ const GeminiChat: React.FC<GeminiChatProps> = ({ products, currentSeason }) => {
         },
       });
 
-      // We send the combined prompt for context
       const result = await chat.sendMessage([
         { text: systemPrompt },
         { text: `Pregunta del cliente: ${userMessage}` }
@@ -91,7 +91,7 @@ const GeminiChat: React.FC<GeminiChatProps> = ({ products, currentSeason }) => {
       setMessages(prev => [...prev, { role: 'model', text: responseText }]);
     } catch (error) {
       console.error("Gemini Error:", error);
-      setMessages(prev => [...prev, { role: 'model', text: "Hubo un pequeño error al procesar tu solicitud. Por favor, intenta de nuevo o contáctanos por WhatsApp." }]);
+      setMessages(prev => [...prev, { role: 'model', text: "Hubo un pequeño error. Por favor, intenta de nuevo o contáctanos por WhatsApp." }]);
     } finally {
       setLoading(false);
     }
@@ -100,37 +100,40 @@ const GeminiChat: React.FC<GeminiChatProps> = ({ products, currentSeason }) => {
   return (
     <div className="fixed bottom-6 right-6 z-[100] flex flex-col items-end pointer-events-none">
       {isOpen && (
-        <div className="w-[calc(100vw-3rem)] sm:w-96 h-[550px] glass-card flex flex-col mb-4 overflow-hidden animate-in fade-in slide-in-from-bottom-6 duration-500 pointer-events-auto shadow-asarum-red/10 border-white/60">
+        <div className="w-[calc(100vw-3rem)] sm:w-80 h-[480px] glass-card flex flex-col mb-4 overflow-hidden animate-in fade-in zoom-in duration-300 pointer-events-auto shadow-2xl border-white/40">
           {/* Header */}
-          <div className="bg-asarum-dark p-6 text-white flex justify-between items-center relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-asarum-red/20 rounded-bl-full -z-0"></div>
-            <div className="flex items-center gap-4 relative z-10">
-              <div className="w-12 h-12 rounded-2xl glass-morphism border-white/20 flex items-center justify-center text-asarum-red bg-white/10">
-                <i className="fa-solid fa-wand-magic-sparkles text-xl"></i>
+          <div className="bg-asarum-dark p-5 text-white flex justify-between items-center relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-24 h-24 bg-[#AEED5D]/10 rounded-bl-full -z-0 pointer-events-none"></div>
+            <div className="flex items-center gap-3 relative z-10">
+              <div className="w-10 h-10 rounded-full bg-asarum-red/10 border border-white/10 flex items-center justify-center text-asarum-red">
+                <i className="fa-solid fa-leaf text-lg"></i>
               </div>
               <div>
-                <p className="text-sm font-black uppercase tracking-widest">Asesor AI</p>
-                <div className="flex items-center gap-2 mt-1">
-                  <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
-                  <span className="text-[10px] opacity-60 uppercase font-black tracking-widest">En Línea</span>
+                <p className="text-xs font-black uppercase tracking-widest text-[#AEED5D]">Elena</p>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></span>
+                  <span className="text-[8px] opacity-60 uppercase font-black tracking-widest">Asesora Experta</span>
                 </div>
               </div>
             </div>
             <button
-              onClick={() => setIsOpen(false)}
-              className="w-10 h-10 rounded-xl bg-white/10 hover:bg-white/20 flex items-center justify-center transition-all active:scale-90"
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsOpen(false);
+              }}
+              className="w-8 h-8 rounded-lg hover:bg-white/10 flex items-center justify-center transition-all opacity-60 hover:opacity-100 relative z-10"
             >
-              <i className="fa-solid fa-xmark"></i>
+              <i className="fa-solid fa-xmark text-sm"></i>
             </button>
           </div>
 
           {/* Messages Area */}
-          <div ref={scrollRef} className="flex-grow p-6 overflow-y-auto space-y-6 bg-slate-50/30 scrollbar-hide">
+          <div ref={scrollRef} className="flex-grow p-5 overflow-y-auto space-y-5 bg-white/40 scrollbar-hide">
             {messages.map((m, i) => (
               <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-[85%] p-4 rounded-2xl shadow-sm text-sm leading-relaxed ${m.role === 'user'
-                  ? 'bg-asarum-dark text-white rounded-tr-none shadow-xl'
-                  : 'bg-white text-asarum-dark border border-white rounded-tl-none font-medium'
+                <div className={`max-w-[90%] p-3.5 rounded-2xl text-xs leading-relaxed ${m.role === 'user'
+                  ? 'bg-asarum-dark text-white rounded-tr-none shadow-lg'
+                  : 'bg-white text-asarum-dark border border-gray-100 rounded-tl-none font-medium'
                   }`}>
                   {m.text}
                 </div>
@@ -138,11 +141,11 @@ const GeminiChat: React.FC<GeminiChatProps> = ({ products, currentSeason }) => {
             ))}
             {loading && (
               <div className="flex justify-start">
-                <div className="bg-white/60 backdrop-blur-sm p-4 rounded-2xl rounded-tl-none border border-white">
-                  <div className="flex gap-2">
-                    <div className="w-2 h-2 bg-asarum-red/40 rounded-full animate-bounce"></div>
-                    <div className="w-2 h-2 bg-asarum-red/40 rounded-full animate-bounce [animation-delay:0.2s]"></div>
-                    <div className="w-2 h-2 bg-asarum-red/40 rounded-full animate-bounce [animation-delay:0.4s]"></div>
+                <div className="bg-white/60 p-3 rounded-2xl rounded-tl-none border border-gray-100">
+                  <div className="flex gap-1.5">
+                    <div className="w-1.5 h-1.5 bg-asarum-red/30 rounded-full animate-bounce"></div>
+                    <div className="w-1.5 h-1.5 bg-asarum-red/30 rounded-full animate-bounce [animation-delay:0.2s]"></div>
+                    <div className="w-1.5 h-1.5 bg-asarum-red/30 rounded-full animate-bounce [animation-delay:0.4s]"></div>
                   </div>
                 </div>
               </div>
@@ -150,38 +153,37 @@ const GeminiChat: React.FC<GeminiChatProps> = ({ products, currentSeason }) => {
           </div>
 
           {/* Input Area */}
-          <div className="p-4 bg-white/60 backdrop-blur-md border-t border-white/40">
-            <div className="flex gap-3 glass-morphism p-2 rounded-3xl bg-white/50 border border-white">
+          <div className="p-3 bg-white/80 border-t border-gray-100">
+            <div className="flex gap-2 bg-gray-50/50 p-1.5 rounded-2xl border border-gray-100">
               <input
                 type="text"
-                placeholder="Escribe tu duda..."
-                className="flex-grow px-4 bg-transparent text-sm font-bold text-asarum-dark placeholder:text-asarum-slate outline-none"
+                placeholder="Pregunta a Elena..."
+                className="flex-grow px-3 bg-transparent text-xs font-bold text-asarum-dark placeholder:text-asarum-slate outline-none"
                 value={input}
                 onChange={e => setInput(e.target.value)}
                 onKeyPress={e => e.key === 'Enter' && handleSend()}
               />
               <button
                 onClick={handleSend}
-                className="bg-asarum-red text-white w-12 h-12 rounded-2xl flex items-center justify-center hover:bg-asarum-dark transition-all shadow-lg shadow-asarum-red/20 active:scale-90"
+                className="bg-asarum-red text-white w-10 h-10 rounded-xl flex items-center justify-center hover:bg-asarum-dark transition-all active:scale-95 shadow-lg shadow-asarum-red/10"
               >
-                <i className="fa-solid fa-paper-plane"></i>
+                <i className="fa-solid fa-paper-plane text-xs"></i>
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Floating Button */}
+      {/* Floating Button - Small, Subtle, Elegant */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="w-20 h-20 rounded-[2rem] bg-asarum-dark hover:bg-asarum-red text-white shadow-[0_20px_50px_rgba(0,0,0,0.2)] flex items-center justify-center text-3xl transition-all hover:scale-110 active:scale-90 pointer-events-auto group relative overflow-hidden"
+        className="w-14 h-14 rounded-full bg-asarum-dark hover:bg-asarum-red text-white shadow-2xl flex items-center justify-center text-xl transition-all hover:scale-105 active:scale-95 pointer-events-auto group relative border border-white/20"
       >
-        <div className="absolute inset-0 bg-gradient-to-tr from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-        <i className={`fa-solid ${isOpen ? 'fa-xmark' : 'fa-wand-magic-sparkles'} transition-transform duration-500`}></i>
+        <i className={`fa-solid ${isOpen ? 'fa-xmark' : 'fa-comment-dots'} transition-all duration-300`}></i>
         {!isOpen && (
-          <span className="absolute top-4 right-4 flex h-3 w-3">
+          <span className="absolute -top-1 -right-1 flex h-4 w-4">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-asarum-red opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-3 w-3 bg-asarum-red"></span>
+            <span className="relative inline-flex rounded-full h-4 w-4 bg-asarum-red border-2 border-white"></span>
           </span>
         )}
       </button>

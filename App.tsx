@@ -15,11 +15,35 @@ import Privacy from './pages/Privacy';
 import { CartItem, Product, Season, Order } from './types';
 import { INITIAL_PRODUCTS } from './constants';
 import CookieBanner from './components/CookieBanner';
+import ScrollToTop from './components/ScrollToTop';
 
 const App: React.FC = () => {
   const [products, setProducts] = useState<Product[]>(() => {
     const saved = localStorage.getItem('asarum_products');
-    return saved ? JSON.parse(saved) : INITIAL_PRODUCTS;
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved) as any[];
+        // Deep Sync: Overwrite images from constants.ts if the product ID exists there
+        return parsed.map(p => {
+          const original = INITIAL_PRODUCTS.find(op => op.id === p.id);
+          if (original) {
+            // FORCE SYNC: Strictly overwrite with latest verified data from constants.ts
+            return {
+              ...p,
+              name: original.name,
+              images: original.images,
+              basePrice: original.basePrice,
+              variants: original.variants || p.variants,
+              seasons: original.seasons || [Season.DEFAULT]
+            };
+          }
+          return p;
+        });
+      } catch (e) {
+        return INITIAL_PRODUCTS;
+      }
+    }
+    return INITIAL_PRODUCTS;
   });
 
   const [cart, setCart] = useState<CartItem[]>(() => {
@@ -82,8 +106,12 @@ const App: React.FC = () => {
 
   return (
     <Router>
-      <div className={`min-h-screen flex flex-col ${currentSeason === Season.VALENTINES ? 'bg-pink-50' : 'bg-gray-50'}`}>
-        <Navbar cartCount={cart.reduce((sum, i) => sum + i.quantity, 0)} isAdmin={isAdmin} />
+      <ScrollToTop />
+      <div className={`min-h-screen flex flex-col ${currentSeason === Season.VALENTINES ? 'bg-pink-50' :
+        currentSeason === Season.MOTHERS_DAY ? 'bg-asarum-pink/5' :
+          'bg-gray-50'
+        }`}>
+        <Navbar cartCount={cart.reduce((sum, i) => sum + i.quantity, 0)} season={currentSeason} />
         <main className="flex-grow">
           <Routes>
             <Route path="/" element={<Home products={products} season={currentSeason} />} />

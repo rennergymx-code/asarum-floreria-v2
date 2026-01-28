@@ -6,8 +6,13 @@
   body {
     @apply font-sans antialiased bg-gray-50;
   }
-  
-  h1, h2, h3, h4, h5, h6 {
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     @apply font-montserrat font-bold;
   }
 }
@@ -38,5 +43,23 @@
 
   .valentines-gradient {
     background: linear-gradient(135deg, #8b0000 0%, #ff4d4d 100%);
+  }
+
+  @keyframes pulse-subtle {
+
+    0%,
+    100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    50% {
+      opacity: 0.85;
+      transform: scale(0.98);
+    }
+  }
+
+  .animate-pulse-subtle {
+    animation: pulse-subtle 3s ease-in-out infinite;
   }
 }
