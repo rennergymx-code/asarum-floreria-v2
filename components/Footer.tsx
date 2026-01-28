@@ -10,8 +10,8 @@ const Footer: React.FC<{ season: Season }> = ({ season }) => {
     <footer className={`${isValentines ? 'bg-red-950' : 'bg-gray-900'} text-white py-16`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-3 gap-12">
         {/* Brand Column */}
-        <div className="flex flex-col">
-          <img src="/logo-footer.png" alt="Asarum Florería y Regalos" className="h-32 w-auto mb-6 object-contain" />
+        <div className="flex flex-col items-start">
+          <img src="/logo-footer.png" alt="Asarum Florería y Regalos" className="h-32 w-auto mb-6 object-contain -ml-6" />
           <p className="text-white text-sm leading-relaxed italic">
             "Flores y detalles para cada ocasión"
           </p>
