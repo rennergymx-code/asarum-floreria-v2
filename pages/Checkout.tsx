@@ -59,6 +59,7 @@ const Checkout: React.FC<CheckoutProps> = ({ cart, onPlaceOrder, onClearCart }) 
   return (
     <div className="max-w-4xl mx-auto px-6 py-10 md:py-16">
       <div className="text-center mb-16">
+        <img src="/logo.png" alt="Asarum" className="h-24 mx-auto mb-8 object-contain" />
         <h1 className="text-5xl md:text-7xl font-black text-asarum-dark uppercase tracking-tighter leading-none mb-4">Finalizar Pago</h1>
         <p className="text-asarum-slate font-black uppercase tracking-[0.2em] text-[10px]">Información Segura y Encriptada</p>
       </div>
