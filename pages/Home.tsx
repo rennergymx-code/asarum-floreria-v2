@@ -106,7 +106,7 @@ const Home: React.FC<HomeProps> = ({ products, season }) => {
             >
               <div className="relative aspect-[4/5] overflow-hidden">
                 <img
-                  src={product.image || 'https://images.unsplash.com/photo-1522673607200-164883214cde?auto=format&fit=crop&q=80&w=800'}
+                  src={product.images[0] || 'https://images.unsplash.com/photo-1522673607200-164883214cde?auto=format&fit=crop&q=80&w=800'}
                   alt={`${product.name} - ${product.description}`}
                   className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                 />

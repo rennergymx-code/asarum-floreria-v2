@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { GoogleGenAI } from '@google/genai';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import { Product, Season } from '../types';
 
 interface Message {
@@ -22,6 +22,10 @@ const GeminiChat: React.FC<GeminiChatProps> = ({ products, currentSeason }) => {
   const [loading, setLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  // Initialize Gemini
+  const apiKey = process.env.GEMINI_API_KEY || '';
+  const genAI = apiKey ? new GoogleGenerativeAI(apiKey) : null;
+
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -36,15 +40,59 @@ const GeminiChat: React.FC<GeminiChatProps> = ({ products, currentSeason }) => {
     setMessages(prev => [...prev, { role: 'user', text: userMessage }]);
     setLoading(true);
 
-    try {
-      // In a real scenario, this would call an edge function or secure backend
-      // Using a placeholder response for visual/flow demonstration
+    if (!genAI) {
       setTimeout(() => {
-        const text = "Como tu asistente de Asarum, te recomiendo nuestros arreglos premium. El 14 de Febrero es una fecha especial, recuerda que las entregas se realizan durante todo el día sin horario garantizado. ¿Deseas ver el catálogo Elena o Sweet Love?";
-        setMessages(prev => [...prev, { role: 'model', text }]);
+        setMessages(prev => [...prev, { role: 'model', text: "Lo siento, el servicio de asesoría no está configurado correctamente (falta API Key). Por favor contacta al administrador." }]);
         setLoading(false);
-      }, 1500);
+      }, 1000);
+      return;
+    }
+
+    try {
+      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+      const systemPrompt = `
+        Eres el "Asesor IA" oficial de Asarum Florería y Regalos. Tu objetivo es ayudar a los clientes a elegir el mejor arreglo floral.
+        Información importante:
+        - Temporada Actual: ${currentSeason}.
+        - Si es San Valentín: El 14 de Febrero NO hay horario de entrega garantizado. Las entregas son en el transcurso del día.
+        - Catálogo de productos: ${JSON.stringify(products.map(p => ({
+        name: p.name,
+        desc: p.description,
+        price: p.variants ? p.variants[0].price : p.basePrice,
+        category: p.category
+      })))}
+
+        Reglas de comportamiento:
+        1. Sé amable, elegante y servicial.
+        2. Si el usuario pregunta por un presupuesto (ej. "menos de 1000 pesos"), busca en el catálogo productos cuyo precio inicial sea menor o igual a esa cantidad y recomiéndalos por su nombre.
+        3. Siempre menciona que somos expertos en Hermosillo y SLRC.
+        4. No inventes productos que no estén en la lista.
+        5. Mantén tus respuestas concisas y enfocadas en la venta.
+      `;
+
+      const chat = model.startChat({
+        history: messages.map(m => ({
+          role: m.role === 'user' ? 'user' : 'model',
+          parts: [{ text: m.text }],
+        })),
+        generationConfig: {
+          maxOutputTokens: 500,
+        },
+      });
+
+      // We send the combined prompt for context
+      const result = await chat.sendMessage([
+        { text: systemPrompt },
+        { text: `Pregunta del cliente: ${userMessage}` }
+      ]);
+
+      const responseText = result.response.text();
+      setMessages(prev => [...prev, { role: 'model', text: responseText }]);
     } catch (error) {
+      console.error("Gemini Error:", error);
+      setMessages(prev => [...prev, { role: 'model', text: "Hubo un pequeño error al procesar tu solicitud. Por favor, intenta de nuevo o contáctanos por WhatsApp." }]);
+    } finally {
       setLoading(false);
     }
   };
@@ -81,8 +129,8 @@ const GeminiChat: React.FC<GeminiChatProps> = ({ products, currentSeason }) => {
             {messages.map((m, i) => (
               <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                 <div className={`max-w-[85%] p-4 rounded-2xl shadow-sm text-sm leading-relaxed ${m.role === 'user'
-                    ? 'bg-asarum-dark text-white rounded-tr-none shadow-xl'
-                    : 'bg-white text-asarum-dark border border-white rounded-tl-none font-medium'
+                  ? 'bg-asarum-dark text-white rounded-tr-none shadow-xl'
+                  : 'bg-white text-asarum-dark border border-white rounded-tl-none font-medium'
                   }`}>
                   {m.text}
                 </div>
