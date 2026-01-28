@@ -55,7 +55,7 @@ const Home: React.FC<HomeProps> = ({ products, season }) => {
       <section className="px-6 max-w-7xl mx-auto">
         <div className="glass-card p-8 md:p-16 text-center">
           <h2 className="text-3xl md:text-5xl font-black text-asarum-dark mb-4">Tu pedido en segundos</h2>
-          <p className="text-asarum-slate mb-12 max-w-md mx-auto">Experiencia optimizada para móviles para que asegures el regalo perfecto rápidamente.</p>
+          <p className="text-asarum-slate mb-12 max-w-md mx-auto">Una experiencia de compra simple y sencilla para que asegures tu regalo perfecto rápidamente.</p>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-5 gap-8">
             {[
