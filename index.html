@@ -63,6 +63,55 @@
     fbq('init', 'PIXEL_ID_HERE');
     fbq('track', 'PageView');
   </script>
+
+  <!-- Structured Data: Local Business -->
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "FlowerShop",
+      "name": "Asarum Florería y Regalos",
+      "image": "https://asarumfloreria.com/logo.png",
+      "@id": "https://asarumfloreria.com",
+      "url": "https://asarumfloreria.com",
+      "telephone": "+526622585573",
+      "priceRange": "$$",
+      "address": [
+        {
+          "@type": "PostalAddress",
+          "streetAddress": "Blvd. Luis Donaldo Colosio #965, Col. Compostela",
+          "addressLocality": "Hermosillo",
+          "addressRegion": "Sonora",
+          "postalCode": "83224",
+          "addressCountry": "MX"
+        },
+        {
+          "@type": "PostalAddress",
+          "streetAddress": "Cjon. Madero y 6ta, Col. Comercial",
+          "addressLocality": "San Luis Río Colorado",
+          "addressRegion": "Sonora",
+          "postalCode": "83449",
+          "addressCountry": "MX"
+        }
+      ],
+      "openingHoursSpecification": {
+        "@type": "OpeningHoursSpecification",
+        "dayOfWeek": [
+          "Monday",
+          "Tuesday",
+          "Wednesday",
+          "Thursday",
+          "Friday",
+          "Saturday"
+        ],
+        "opens": "09:00",
+        "closes": "19:00"
+      },
+      "sameAs": [
+        "https://www.facebook.com/asarumfloreria",
+        "https://www.instagram.com/asarumfloreria"
+      ]
+    }
+  </script>
 </head>
 
 <body class="bg-gray-50">

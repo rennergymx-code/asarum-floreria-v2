@@ -27,6 +27,32 @@ export const AnalyticsService = {
     },
 
     /**
+     * Track when a user views a specific product
+     */
+    trackViewContent: (product: any) => {
+        if (window.gtag) {
+            window.gtag('event', 'view_item', {
+                currency: 'MXN',
+                value: product.basePrice,
+                items: [{
+                    item_id: product.id,
+                    item_name: product.name,
+                    price: product.basePrice
+                }]
+            });
+        }
+        if (window.fbq) {
+            window.fbq('track', 'ViewContent', {
+                content_ids: [product.id],
+                content_name: product.name,
+                content_type: 'product',
+                value: product.basePrice,
+                currency: 'MXN'
+            });
+        }
+    },
+
+    /**
      * Track when a product is added to cart
      */
     trackAddToCart: (product: any, quantity: number) => {

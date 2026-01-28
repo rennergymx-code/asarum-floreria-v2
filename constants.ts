@@ -43,7 +43,7 @@ export const INITIAL_PRODUCTS: Product[] = [
       { name: '36 ROSAS', price: 2750 },
       { name: '50 ROSAS', price: 2950 }
     ],
-    notes: 'El papel puede variar de acuerdo a stock.',
+    notes: 'El papel puede variar de acuerdo a stock. No incluye la base mostrada en la imagen; es un bouquet (ramo).',
     seasons: [Season.DEFAULT, Season.VALENTINES, Season.MOTHERS_DAY]
   },
   {

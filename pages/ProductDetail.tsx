@@ -1,8 +1,8 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Product, CartItem } from '../types';
 import { AnalyticsService } from '../services/analytics';
+import SEO from '../components/SEO';
 
 interface ProductDetailProps {
   products: Product[];
@@ -17,6 +17,12 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ products, onAddToCart }) 
   const [selectedVariant, setSelectedVariant] = useState(product?.variants?.[0]);
   const [quantity, setQuantity] = useState(1);
   const [mainImage, setMainImage] = useState(product?.images?.[0] || '');
+
+  useEffect(() => {
+    if (product) {
+      AnalyticsService.trackViewContent(product);
+    }
+  }, [product]);
 
   if (!product) {
     return (
@@ -48,6 +54,11 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ products, onAddToCart }) 
 
   return (
     <div className="max-w-7xl mx-auto px-6 py-10 md:py-20">
+      <SEO
+        title={product.name}
+        description={`Compra ${product.name} en Asarum Florería. Arreglo premium con envío a domicilio en Hermosillo y SLRC.`}
+        image={product.images[0]}
+      />
       <div className="flex flex-col lg:flex-row gap-12 lg:gap-20">
         {/* Gallery - Mobile Optimized */}
         <div className="lg:w-1/2 space-y-6">
@@ -75,7 +86,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ products, onAddToCart }) 
         {/* Info - Mobile Priority */}
         <div className="lg:w-1/2 flex flex-col pt-4">
           <nav className="mb-6 flex items-center gap-3">
-            <button onClick={() => navigate('/#catalogo')} className="text-[10px] font-black text-asarum-red uppercase tracking-widest hover:underline">catálogo</button>
+            <button onClick={() => navigate('/', { state: { scrollToCatalog: true } })} className="text-[10px] font-black text-asarum-red uppercase tracking-widest hover:underline">catálogo</button>
             <i className="fa-solid fa-chevron-right text-[8px] text-asarum-slate"></i>
             <span className="text-[10px] font-black text-asarum-slate uppercase tracking-widest">{product.name}</span>
           </nav>

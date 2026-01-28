@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import SEO from '../components/SEO';
 import { Product, Season } from '../types';
 
 interface HomeProps {
@@ -30,8 +31,10 @@ const Home: React.FC<HomeProps> = ({ products, season }) => {
   };
 
   React.useEffect(() => {
-    if (window.location.hash === '#catalogo') {
-      setTimeout(performScrollToCatalog, 150);
+    if (location.state?.scrollToCatalog) {
+      setTimeout(performScrollToCatalog, 300); // Slightly more delay to ensure content is ready
+      // Clear state so it doesn't scroll again on refresh
+      window.history.replaceState({}, document.title);
     }
   }, [location]);
 
@@ -65,6 +68,10 @@ const Home: React.FC<HomeProps> = ({ products, season }) => {
 
   return (
     <div className="space-y-16 pb-24">
+      <SEO
+        title="Flores a Domicilio en Hermosillo y SLRC"
+        description="Arreglos florales premium, ramos y detalles únicos con envío rápido y seguro en Hermosillo y San Luis Río Colorado. ¡Compra flores en línea fácil y seguro!"
+      />
       {/* Hero Section - Premium & Emotional */}
       <section className={`relative min-h-[85vh] md:min-h-[90vh] py-20 flex items-center justify-center overflow-hidden m-4 md:m-0 rounded-[2.5rem] md:rounded-none shadow-2xl md:shadow-none ${isValentines ? 'bg-asarum-dark' : isMothersDay ? 'bg-asarum-pink/20' : 'bg-asarum-dark'
         }`}>
