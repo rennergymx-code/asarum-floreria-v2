@@ -22,7 +22,7 @@ const Home: React.FC<HomeProps> = ({ products, season }) => {
             : 'https://images.unsplash.com/photo-1490750967868-88aa4486c946?auto=format&fit=crop&q=80&w=2000'
           }
           className="absolute inset-0 w-full h-full object-cover scale-105"
-          alt="Flores"
+          alt={isValentines ? "Ramos de Rosas Rojas Premium para San Valentín" : "Arreglos Florales Exclusivos Asarum Florería"}
         />
         <div className="relative z-20 text-center px-6 max-w-4xl">
           {isValentines && (
@@ -33,7 +33,7 @@ const Home: React.FC<HomeProps> = ({ products, season }) => {
             </div>
           )}
           <h1 className="text-5xl md:text-8xl font-black text-white mb-6 tracking-tight leading-none uppercase drop-shadow-2xl">
-            {isValentines ? 'Valentine\'s \nPremium' : 'Exclusive \nAsarum'}
+            {isValentines ? 'San Valentín \nPremium' : 'Asarum \nFlorería'}
           </h1>
           <p className="text-lg md:text-xl text-white/90 mb-10 max-w-xl mx-auto leading-relaxed font-medium">
             Arreglos diseñados para perdurar. Envíos exclusivos en Hermosillo y SLRC.
@@ -102,7 +102,7 @@ const Home: React.FC<HomeProps> = ({ products, season }) => {
               <div className="relative aspect-[4/5] overflow-hidden">
                 <img
                   src={product.image || 'https://images.unsplash.com/photo-1522673607200-164883214cde?auto=format&fit=crop&q=80&w=800'}
-                  alt={product.name}
+                  alt={`${product.name} - ${product.description}`}
                   className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                 />
                 <div className="absolute top-4 right-4 glass-morphism px-3 py-1.5 rounded-2xl text-asarum-red font-black text-xs shadow-lg">

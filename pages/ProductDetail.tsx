@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Product, CartItem } from '../types';
+import { AnalyticsService } from '../services/analytics';
 
 interface ProductDetailProps {
   products: Product[];
@@ -31,7 +32,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ products, onAddToCart }) 
 
   const handleAddToCart = () => {
     if (!selectedVariant) return;
-    onAddToCart({
+    const cartItem: CartItem = {
       id: Math.random().toString(36).substr(2, 9),
       productId: product.id,
       productName: product.name,
@@ -39,7 +40,9 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ products, onAddToCart }) 
       variantName: selectedVariant.name,
       price: selectedVariant.price,
       quantity
-    });
+    };
+    onAddToCart(cartItem);
+    AnalyticsService.trackAddToCart(product, quantity);
     navigate('/cart');
   };
 
@@ -51,7 +54,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ products, onAddToCart }) 
           <div className="aspect-[4/5] rounded-[3rem] overflow-hidden glass-card group">
             <img
               src={mainImage}
-              alt={product.name}
+              alt={`${product.name} - Arreglo Floral Exclusive Asarum`}
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-1000"
             />
           </div>
@@ -105,8 +108,8 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ products, onAddToCart }) 
                       key={v.name}
                       onClick={() => setSelectedVariant(v)}
                       className={`p-4 rounded-3xl border-2 text-left transition-all active:scale-95 ${selectedVariant?.name === v.name
-                          ? 'border-asarum-red bg-asarum-red/5 shadow-inner ring-2 ring-asarum-red/20'
-                          : 'border-white glass-morphism hover:border-asarum-red/30'
+                        ? 'border-asarum-red bg-asarum-red/5 shadow-inner ring-2 ring-asarum-red/20'
+                        : 'border-white glass-morphism hover:border-asarum-red/30'
                         }`}
                     >
                       <div className={`text-xs font-black uppercase tracking-tight ${selectedVariant?.name === v.name ? 'text-asarum-red' : 'text-asarum-dark'}`}>

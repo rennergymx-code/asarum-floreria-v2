@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { Season } from '../types';
 
 const Footer: React.FC<{ season: Season }> = ({ season }) => {
@@ -28,7 +29,7 @@ const Footer: React.FC<{ season: Season }> = ({ season }) => {
 
         <div className="space-y-8">
           <h3 className="text-lg font-bold mb-4 border-b border-asarum-red/30 pb-2 inline-block">Nuestras Sucursales</h3>
-          
+
           <div className="space-y-6">
             <div>
               <div className="flex justify-between items-start">
@@ -92,6 +93,14 @@ const Footer: React.FC<{ season: Season }> = ({ season }) => {
             <p className="text-[10px] text-gray-500 uppercase tracking-widest font-medium">
               © 1994 Asarum Florería y Regalos. Todos los derechos reservados.
             </p>
+            <div className="flex space-x-4 mt-2">
+              <Link to="/terminos-y-condiciones" className="text-[10px] text-gray-600 hover:text-white transition-colors uppercase tracking-widest">
+                Términos y Condiciones
+              </Link>
+              <Link to="/politica-de-privacidad" className="text-[10px] text-gray-600 hover:text-white transition-colors uppercase tracking-widest">
+                Política de Privacidad
+              </Link>
+            </div>
           </div>
         </div>
       </div>

@@ -2,6 +2,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { CartItem } from '../types';
+import { AnalyticsService } from '../services/analytics';
 
 interface CartProps {
   cart: CartItem[];
@@ -114,6 +115,7 @@ const Cart: React.FC<CartProps> = ({ cart, onRemove, onUpdateQty }) => {
 
             <Link
               to="/checkout"
+              onClick={() => AnalyticsService.trackInitiateCheckout(cart, total)}
               className="btn-primary w-full py-6 text-xl flex items-center justify-center gap-4 mb-8"
             >
               <span>Continuar Pago</span>

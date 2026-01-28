@@ -10,8 +10,11 @@ import Cart from './pages/Cart';
 import Checkout from './pages/Checkout';
 import AdminLogin from './pages/AdminLogin';
 import AdminDashboard from './pages/AdminDashboard';
+import Terms from './pages/Terms';
+import Privacy from './pages/Privacy';
 import { CartItem, Product, Season, Order } from './types';
 import { INITIAL_PRODUCTS } from './constants';
+import CookieBanner from './components/CookieBanner';
 
 const App: React.FC = () => {
   const [products, setProducts] = useState<Product[]>(() => {
@@ -49,8 +52,8 @@ const App: React.FC = () => {
     setCart(prev => {
       const existing = prev.find(i => i.productId === item.productId && i.variantName === item.variantName);
       if (existing) {
-        return prev.map(i => i.productId === item.productId && i.variantName === item.variantName 
-          ? { ...i, quantity: i.quantity + item.quantity } 
+        return prev.map(i => i.productId === item.productId && i.variantName === item.variantName
+          ? { ...i, quantity: i.quantity + item.quantity }
           : i);
       }
       return [...prev, item];
@@ -88,14 +91,17 @@ const App: React.FC = () => {
             <Route path="/cart" element={<Cart cart={cart} onRemove={removeFromCart} onUpdateQty={updateCartQuantity} />} />
             <Route path="/checkout" element={<Checkout cart={cart} onPlaceOrder={addOrder} onClearCart={clearCart} />} />
             <Route path="/admin/login" element={<AdminLogin setIsAdmin={setIsAdmin} />} />
-            <Route 
-              path="/admin/dashboard" 
-              element={isAdmin ? <AdminDashboard products={products} orders={orders} setProducts={setProducts} season={currentSeason} setSeason={setCurrentSeason} logout={() => setIsAdmin(false)} /> : <Navigate to="/admin/login" />} 
+            <Route
+              path="/admin/dashboard"
+              element={isAdmin ? <AdminDashboard products={products} orders={orders} setProducts={setProducts} season={currentSeason} setSeason={setCurrentSeason} logout={() => setIsAdmin(false)} /> : <Navigate to="/admin/login" />}
             />
+            <Route path="/terminos-y-condiciones" element={<Terms />} />
+            <Route path="/politica-de-privacidad" element={<Privacy />} />
           </Routes>
         </main>
         <Footer season={currentSeason} />
         <GeminiChat products={products} currentSeason={currentSeason} />
+        <CookieBanner />
       </div>
     </Router>
   );

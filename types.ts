@@ -39,8 +39,11 @@ export interface Order {
   total: number;
   customerName: string;
   customerPhone: string;
+  customerEmail: string; // Required for Stripe
   deliveryAddress: string;
   deliveryCoords?: { lat: number; lng: number };
   cardMessage: string;
   status: 'Pendiante' | 'En Camino' | 'Entregado';
+  paymentStatus: 'pending' | 'paid' | 'failed';
+  stripePaymentIntentId?: string;
 }

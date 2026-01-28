@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CartItem, Order } from '../types';
+import { AnalyticsService } from '../services/analytics';
 
 interface CheckoutProps {
   cart: CartItem[];
@@ -37,12 +38,15 @@ const Checkout: React.FC<CheckoutProps> = ({ cart, onPlaceOrder, onClearCart }) 
         total,
         customerName: form.name,
         customerPhone: form.phone,
+        customerEmail: form.email,
         deliveryAddress: form.address,
         cardMessage: form.cardMessage,
-        status: 'Pendiante'
+        status: 'Pendiante',
+        paymentStatus: 'pending'
       };
 
       onPlaceOrder(newOrder);
+      AnalyticsService.trackPurchase(newOrder.id, total, cart);
       setLoading(false);
       onClearCart();
       alert('¡Gracias por tu compra! Tu pedido ha sido recibido y nos contactaremos contigo por WhatsApp.');
@@ -107,6 +111,19 @@ const Checkout: React.FC<CheckoutProps> = ({ cart, onPlaceOrder, onClearCart }) 
                 onChange={e => setForm({ ...form, phone: e.target.value })}
               />
             </div>
+          </div>
+
+          <div className="mt-8 space-y-2">
+            <label className="text-[10px] font-black text-asarum-slate uppercase tracking-widest ml-1">Correo Electrónico (Para tu recibo)</label>
+            <input
+              required
+              type="email"
+              placeholder="tu@email.com"
+              className="w-full bg-white/50 backdrop-blur-sm px-6 py-4 rounded-2xl border-2 border-transparent focus:border-asarum-red focus:bg-white outline-none transition-all shadow-inner"
+              value={form.email}
+              onChange={e => setForm({ ...form, email: e.target.value })}
+            />
+            <p className="text-[10px] text-asarum-slate font-medium italic mt-2 ml-1">Usaremos este correo para enviarte el comprobante de Stripe.</p>
           </div>
         </div>
 
