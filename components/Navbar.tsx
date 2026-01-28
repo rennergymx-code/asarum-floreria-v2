@@ -32,7 +32,7 @@ const Navbar: React.FC<NavbarProps> = ({ cartCount, isAdmin, season }) => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-20">
           <Link to="/" className="flex items-center">
-            <img src="/logo.png" alt="Asarum Florería y Regalos" className="h-20 md:h-24 w-auto py-2 object-contain" />
+            <img src="/logo.png" alt="Asarum Florería y Regalos" className="h-16 md:h-20 w-auto py-1 object-contain" />
           </Link>
           Line 35:
           Line 36:           <div className="flex items-center space-x-4">
