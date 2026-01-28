@@ -9,7 +9,8 @@ const AdminLogin: React.FC<{ setIsAdmin: (val: boolean) => void }> = ({ setIsAdm
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    if (user === 'admin' && pass === 'asarum2024') {
+    // Credentials updated per user request
+    if (user === 'admin' && pass === '123456') {
       setIsAdmin(true);
       navigate('/admin/dashboard');
     } else {
@@ -18,33 +19,35 @@ const AdminLogin: React.FC<{ setIsAdmin: (val: boolean) => void }> = ({ setIsAdm
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
-      <div className="max-w-md w-full bg-white rounded-3xl shadow-2xl p-10">
+    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-asarum-red/10 to-asarum-pink/20">
+      <div className="max-w-md w-full glass-card p-8 md:p-12">
         <div className="text-center mb-10">
-          <span className="text-3xl font-serif font-bold text-asarum-red">Asarum</span>
-          <p className="text-gray-400 text-xs font-bold uppercase tracking-widest mt-2">Panel de Administración</p>
+          <h1 className="text-4xl font-extrabold text-asarum-red mb-2">ASARUM</h1>
+          <p className="text-asarum-slate text-xs font-bold uppercase tracking-widest">Admin Access</p>
         </div>
         <form onSubmit={handleLogin} className="space-y-6">
-          <div>
-            <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Usuario</label>
-            <input 
-              type="text" 
-              className="w-full px-5 py-3 rounded-xl border border-gray-200 focus:border-asarum-red outline-none transition-colors"
+          <div className="space-y-2">
+            <label className="text-xs font-bold text-asarum-slate uppercase ml-2">Username</label>
+            <input
+              type="text"
+              className="w-full px-6 py-4 rounded-3xl glass-morphism focus:bg-white/90 focus:ring-2 focus:ring-asarum-red/30 outline-none transition-all"
+              placeholder="admin"
               value={user}
               onChange={e => setUser(e.target.value)}
             />
           </div>
-          <div>
-            <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Contraseña</label>
-            <input 
-              type="password" 
-              className="w-full px-5 py-3 rounded-xl border border-gray-200 focus:border-asarum-red outline-none transition-colors"
+          <div className="space-y-2">
+            <label className="text-xs font-bold text-asarum-slate uppercase ml-2">Password</label>
+            <input
+              type="password"
+              className="w-full px-6 py-4 rounded-3xl glass-morphism focus:bg-white/90 focus:ring-2 focus:ring-asarum-red/30 outline-none transition-all"
+              placeholder="••••••"
               value={pass}
               onChange={e => setPass(e.target.value)}
             />
           </div>
-          <button className="w-full bg-asarum-red text-white py-4 rounded-xl font-bold shadow-lg hover:bg-red-800 transition-colors">
-            Acceder al Sistema
+          <button className="btn-primary w-full mt-4">
+            Sign In
           </button>
         </form>
       </div>

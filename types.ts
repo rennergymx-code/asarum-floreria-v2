@@ -14,12 +14,12 @@ export interface ProductVariant {
 export interface Product {
   id: string;
   name: string;
-  image: string;
-  basePrice: number;
-  variants: ProductVariant[];
   description: string;
+  basePrice: number;
+  images: string[];
+  category: string;
+  variants?: ProductVariant[];
   notes?: string;
-  season: Season;
 }
 
 export interface CartItem {

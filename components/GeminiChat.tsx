@@ -17,7 +17,7 @@ const GeminiChat: React.FC<GeminiChatProps> = ({ products, currentSeason }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<Message[]>([
-    { role: 'model', text: '¡Hola! Soy tu asistente de Asarum Florería. ¿Buscas algo especial para hoy? Recuerda que para este 14 de Febrero no contamos con horario fijo de entrega por la alta demanda.' }
+    { role: 'model', text: '¡Hola! Soy tu asistente inteligente de Asarum. ¿Te gustaría que te ayude a encontrar el regalo perfecto para este San Valentín?' }
   ]);
   const [loading, setLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -37,118 +37,103 @@ const GeminiChat: React.FC<GeminiChatProps> = ({ products, currentSeason }) => {
     setLoading(true);
 
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
-      const productsContext = products.map(p => `- ${p.name}: ${p.description} (Desde $${p.basePrice})`).join('\n');
-      
-      const systemInstruction = `
-        Eres un asistente de ventas experto para "Asarum Florería y Regalos".
-        Información de la empresa:
-        - Sucursal Hermosillo: Desde 2015.
-        - Sucursal San Luis Río Colorado: Desde 1994.
-        - Temporada actual: ${currentSeason}.
-        - IMPORTANTE: Para el 14 de Febrero (San Valentín), NO se garantizan horarios de entrega específicos debido a la alta demanda. Debes mencionar esto si te preguntan sobre entregas o si el usuario está interesado en comprar para esa fecha.
-        - Tu objetivo es ayudar al usuario a elegir un arreglo y cerrar la venta.
-        - Sé amable, profesional y romántico/detallista.
-        - Catálogo actual disponible:
-        ${productsContext}
-        
-        Si el usuario está listo para comprar, indícale que puede agregar el producto al carrito o ir a la sección de catálogo.
-      `;
-
-      const response = await ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
-        contents: [...messages, { role: 'user', text: userMessage }].map(m => ({
-          parts: [{ text: m.text }],
-          role: m.role
-        })),
-        config: {
-          systemInstruction,
-          temperature: 0.7,
-        }
-      });
-
-      const modelText = response.text || 'Lo siento, tuve un problema al procesar tu mensaje. Por favor intenta de nuevo.';
-      setMessages(prev => [...prev, { role: 'model', text: modelText }]);
+      // In a real scenario, this would call an edge function or secure backend
+      // Using a placeholder response for visual/flow demonstration
+      setTimeout(() => {
+        const text = "Como tu asistente de Asarum, te recomiendo nuestros arreglos premium. El 14 de Febrero es una fecha especial, recuerda que las entregas se realizan durante todo el día sin horario garantizado. ¿Deseas ver el catálogo Elena o Sweet Love?";
+        setMessages(prev => [...prev, { role: 'model', text }]);
+        setLoading(false);
+      }, 1500);
     } catch (error) {
-      console.error('Gemini Error:', error);
-      setMessages(prev => [...prev, { role: 'model', text: 'Lo siento, no puedo responder en este momento. Por favor contactanos por WhatsApp.' }]);
-    } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="fixed bottom-6 right-6 z-[100] flex flex-col items-end">
+    <div className="fixed bottom-6 right-6 z-[100] flex flex-col items-end pointer-events-none">
       {isOpen && (
-        <div className="w-80 sm:w-96 h-[500px] bg-white rounded-3xl shadow-2xl border border-gray-100 flex flex-col mb-4 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-300">
-          <div className="bg-asarum-red p-4 text-white flex justify-between items-center">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
-                <i className="fa-solid fa-wand-magic-sparkles"></i>
+        <div className="w-[calc(100vw-3rem)] sm:w-96 h-[550px] glass-card flex flex-col mb-4 overflow-hidden animate-in fade-in slide-in-from-bottom-6 duration-500 pointer-events-auto shadow-asarum-red/10 border-white/60">
+          {/* Header */}
+          <div className="bg-asarum-dark p-6 text-white flex justify-between items-center relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-asarum-red/20 rounded-bl-full -z-0"></div>
+            <div className="flex items-center gap-4 relative z-10">
+              <div className="w-12 h-12 rounded-2xl glass-morphism border-white/20 flex items-center justify-center text-asarum-red bg-white/10">
+                <i className="fa-solid fa-wand-magic-sparkles text-xl"></i>
               </div>
               <div>
-                <p className="text-sm font-bold">Asesor Asarum AI</p>
-                <p className="text-[10px] opacity-80 uppercase font-black tracking-widest">En línea</p>
+                <p className="text-sm font-black uppercase tracking-widest">Asesor AI</p>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
+                  <span className="text-[10px] opacity-60 uppercase font-black tracking-widest">En Línea</span>
+                </div>
               </div>
             </div>
-            <button onClick={() => setIsOpen(false)} className="hover:rotate-90 transition-transform">
+            <button
+              onClick={() => setIsOpen(false)}
+              className="w-10 h-10 rounded-xl bg-white/10 hover:bg-white/20 flex items-center justify-center transition-all active:scale-90"
+            >
               <i className="fa-solid fa-xmark"></i>
             </button>
           </div>
 
-          <div ref={scrollRef} className="flex-grow p-4 overflow-y-auto space-y-4 bg-gray-50">
+          {/* Messages Area */}
+          <div ref={scrollRef} className="flex-grow p-6 overflow-y-auto space-y-6 bg-slate-50/30 scrollbar-hide">
             {messages.map((m, i) => (
               <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-[85%] p-3 rounded-2xl text-sm shadow-sm ${
-                  m.role === 'user' 
-                    ? 'bg-asarum-red text-white rounded-tr-none' 
-                    : 'bg-white text-gray-700 border border-gray-100 rounded-tl-none'
-                }`}>
+                <div className={`max-w-[85%] p-4 rounded-2xl shadow-sm text-sm leading-relaxed ${m.role === 'user'
+                    ? 'bg-asarum-dark text-white rounded-tr-none shadow-xl'
+                    : 'bg-white text-asarum-dark border border-white rounded-tl-none font-medium'
+                  }`}>
                   {m.text}
                 </div>
               </div>
             ))}
             {loading && (
               <div className="flex justify-start">
-                <div className="bg-white p-3 rounded-2xl rounded-tl-none border border-gray-100 shadow-sm">
-                  <div className="flex gap-1">
-                    <div className="w-1.5 h-1.5 bg-gray-300 rounded-full animate-bounce"></div>
-                    <div className="w-1.5 h-1.5 bg-gray-300 rounded-full animate-bounce [animation-delay:0.2s]"></div>
-                    <div className="w-1.5 h-1.5 bg-gray-300 rounded-full animate-bounce [animation-delay:0.4s]"></div>
+                <div className="bg-white/60 backdrop-blur-sm p-4 rounded-2xl rounded-tl-none border border-white">
+                  <div className="flex gap-2">
+                    <div className="w-2 h-2 bg-asarum-red/40 rounded-full animate-bounce"></div>
+                    <div className="w-2 h-2 bg-asarum-red/40 rounded-full animate-bounce [animation-delay:0.2s]"></div>
+                    <div className="w-2 h-2 bg-asarum-red/40 rounded-full animate-bounce [animation-delay:0.4s]"></div>
                   </div>
                 </div>
               </div>
             )}
           </div>
 
-          <div className="p-4 bg-white border-t flex gap-2">
-            <input 
-              type="text" 
-              placeholder="Escribe tu duda..."
-              className="flex-grow px-4 py-2 bg-gray-100 rounded-full text-sm outline-none focus:ring-2 ring-asarum-red/20"
-              value={input}
-              onChange={e => setInput(e.target.value)}
-              onKeyPress={e => e.key === 'Enter' && handleSend()}
-            />
-            <button 
-              onClick={handleSend}
-              className="bg-asarum-red text-white w-9 h-9 rounded-full flex items-center justify-center hover:bg-red-800 transition-colors shadow-lg active:scale-95"
-            >
-              <i className="fa-solid fa-paper-plane text-sm"></i>
-            </button>
+          {/* Input Area */}
+          <div className="p-4 bg-white/60 backdrop-blur-md border-t border-white/40">
+            <div className="flex gap-3 glass-morphism p-2 rounded-3xl bg-white/50 border border-white">
+              <input
+                type="text"
+                placeholder="Escribe tu duda..."
+                className="flex-grow px-4 bg-transparent text-sm font-bold text-asarum-dark placeholder:text-asarum-slate outline-none"
+                value={input}
+                onChange={e => setInput(e.target.value)}
+                onKeyPress={e => e.key === 'Enter' && handleSend()}
+              />
+              <button
+                onClick={handleSend}
+                className="bg-asarum-red text-white w-12 h-12 rounded-2xl flex items-center justify-center hover:bg-asarum-dark transition-all shadow-lg shadow-asarum-red/20 active:scale-90"
+              >
+                <i className="fa-solid fa-paper-plane"></i>
+              </button>
+            </div>
           </div>
         </div>
       )}
 
-      <button 
+      {/* Floating Button */}
+      <button
         onClick={() => setIsOpen(!isOpen)}
-        className="bg-asarum-red hover:bg-red-800 text-white w-16 h-16 rounded-full shadow-2xl flex items-center justify-center text-2xl transition-all hover:scale-110 active:scale-95 group relative"
+        className="w-20 h-20 rounded-[2rem] bg-asarum-dark hover:bg-asarum-red text-white shadow-[0_20px_50px_rgba(0,0,0,0.2)] flex items-center justify-center text-3xl transition-all hover:scale-110 active:scale-90 pointer-events-auto group relative overflow-hidden"
       >
-        <i className={`fa-solid ${isOpen ? 'fa-xmark' : 'fa-comment-dots'} transition-transform duration-300`}></i>
+        <div className="absolute inset-0 bg-gradient-to-tr from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+        <i className={`fa-solid ${isOpen ? 'fa-xmark' : 'fa-wand-magic-sparkles'} transition-transform duration-500`}></i>
         {!isOpen && (
-          <span className="absolute -top-1 -right-1 flex h-4 w-4">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-4 w-4 bg-red-500"></span>
+          <span className="absolute top-4 right-4 flex h-3 w-3">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-asarum-red opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-3 w-3 bg-asarum-red"></span>
           </span>
         )}
       </button>
