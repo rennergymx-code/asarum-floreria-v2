@@ -31,7 +31,9 @@ const AppContent: React.FC<{
   setCurrentSeason: React.Dispatch<React.SetStateAction<Season>>;
   isAdmin: boolean;
   setIsAdmin: React.Dispatch<React.SetStateAction<boolean>>;
-}> = ({ products, setProducts, cart, setCart, orders, setOrders, currentSeason, setCurrentSeason, isAdmin, setIsAdmin }) => {
+  announcement: string;
+  setAnnouncement: React.Dispatch<React.SetStateAction<string>>;
+}> = ({ products, setProducts, cart, setCart, orders, setOrders, currentSeason, setCurrentSeason, isAdmin, setIsAdmin, announcement, setAnnouncement }) => {
   const location = useLocation();
 
   useEffect(() => {
@@ -75,7 +77,7 @@ const AppContent: React.FC<{
       currentSeason === Season.MOTHERS_DAY ? 'bg-asarum-pink/5' :
         'bg-gray-50'
       }`}>
-      <Navbar cartCount={cart.reduce((sum, i) => sum + i.quantity, 0)} season={currentSeason} />
+      <Navbar cartCount={cart.reduce((sum, i) => sum + i.quantity, 0)} season={currentSeason} announcement={announcement} />
       <main className="flex-grow">
         <Routes>
           <Route path="/" element={<Home products={products} season={currentSeason} />} />
@@ -85,7 +87,7 @@ const AppContent: React.FC<{
           <Route path="/admin/login" element={<AdminLogin setIsAdmin={setIsAdmin} />} />
           <Route
             path="/admin/dashboard"
-            element={isAdmin ? <AdminDashboard products={products} orders={orders} setProducts={setProducts} season={currentSeason} setSeason={setCurrentSeason} logout={() => setIsAdmin(false)} /> : <Navigate to="/admin/login" />}
+            element={isAdmin ? <AdminDashboard products={products} orders={orders} setProducts={setProducts} setOrders={setOrders} season={currentSeason} setSeason={setCurrentSeason} logout={() => setIsAdmin(false)} announcement={announcement} setAnnouncement={setAnnouncement} /> : <Navigate to="/admin/login" />}
           />
           <Route path="/terminos-y-condiciones" element={<Terms />} />
           <Route path="/politica-de-privacidad" element={<Privacy />} />
@@ -146,13 +148,18 @@ const App: React.FC = () => {
     return localStorage.getItem('asarum_is_admin') === 'true';
   });
 
+  const [announcement, setAnnouncement] = useState<string>(() => {
+    return localStorage.getItem('asarum_announcement') || '¡Envíos gratis para este 14 de Febrero!';
+  });
+
   useEffect(() => {
     localStorage.setItem('asarum_products', JSON.stringify(products));
     localStorage.setItem('asarum_cart', JSON.stringify(cart));
     localStorage.setItem('asarum_orders', JSON.stringify(orders));
     localStorage.setItem('asarum_season', currentSeason);
     localStorage.setItem('asarum_is_admin', String(isAdmin));
-  }, [products, cart, orders, currentSeason, isAdmin]);
+    localStorage.setItem('asarum_announcement', announcement);
+  }, [products, cart, orders, currentSeason, isAdmin, announcement]);
 
   // Supabase Initialization
   useEffect(() => {
@@ -213,6 +220,18 @@ const App: React.FC = () => {
         }));
         setOrders(mappedOrders);
       }
+
+      // 4. Fetch Store Settings
+      const { data: settings } = await supabase
+        .from('store_settings')
+        .select('*');
+
+      if (settings) {
+        const announcementSetting = settings.find(s => s.key === 'announcement_message');
+        if (announcementSetting && announcementSetting.value) {
+          setAnnouncement(announcementSetting.value.message || '');
+        }
+      }
     };
 
     initSupabase();
@@ -232,6 +251,8 @@ const App: React.FC = () => {
         setCurrentSeason={setCurrentSeason}
         isAdmin={isAdmin}
         setIsAdmin={setIsAdmin}
+        announcement={announcement}
+        setAnnouncement={setAnnouncement}
       />
     </Router>
   );

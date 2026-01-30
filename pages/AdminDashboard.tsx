@@ -6,19 +6,24 @@ interface AdminDashboardProps {
   products: Product[];
   orders: Order[];
   setProducts: (p: Product[]) => void;
+  setOrders: (o: Order[]) => void;
   season: Season;
   setSeason: (s: Season) => void;
   logout: () => void;
+  announcement: string;
+  setAnnouncement: (a: string) => void;
 }
 
-const AdminDashboard: React.FC<AdminDashboardProps> = ({ products, orders, setProducts, season, setSeason, logout }) => {
-  const [activeTab, setActiveTab] = useState<'orders' | 'products' | 'settings' | 'sales'>('orders');
+const AdminDashboard: React.FC<AdminDashboardProps> = ({ products, orders, setProducts, setOrders, season, setSeason, logout, announcement, setAnnouncement }) => {
+  const [activeTab, setActiveTab] = useState<'orders' | 'products' | 'settings' | 'sales' | 'deliveries'>('orders');
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [isAddingProduct, setIsAddingProduct] = useState(false);
   const [formState, setFormState] = useState<Partial<Product>>({});
   const [isDemoMode, setIsDemoMode] = useState(false);
   const [branchFilter, setBranchFilter] = useState<'Hermosillo' | 'San Luis Río Colorado' | 'Todas'>('Todas');
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [editingPriceId, setEditingPriceId] = useState<string | null>(null);
+  const [tempPriceValue, setTempPriceValue] = useState<string>('');
 
   const [demoOrdersState, setDemoOrdersState] = useState<Order[]>([
     {
@@ -101,7 +106,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ products, orders, setPr
       gateCode: "#5678",
       qrAccess: false,
       cardMessage: "Con mucho cariño.",
-      status: "Pendiante",
+      status: "Pendiente",
       paymentStatus: "paid"
     },
     {
@@ -128,14 +133,15 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ products, orders, setPr
       deliveryAddress: "Av. Libertad #15, San Luis Río Colorado",
       qrAccess: false,
       cardMessage: "Con mucho amor.",
-      status: "Pendiante",
+      status: "Pendiente",
       paymentStatus: "paid"
     }
   ]);
 
-  const unfilteredOrders = isDemoMode ? demoOrdersState : orders;
+  const demoOrders = demoOrdersState.map(o => o.status === 'Pendiante' as any ? { ...o, status: 'Pendiente' } : o);
+  const migratedOrders = (isDemoMode ? demoOrders : orders).map(o => o.status === 'Pendiante' as any ? { ...o, status: 'Pendiente' } : o);
 
-  const currentOrders = unfilteredOrders.filter(o => {
+  const currentOrders = migratedOrders.filter(o => {
     if (branchFilter === 'Todas') return true;
     const isSLRC = o.pickupBranch === 'San Luis Río Colorado' || o.deliveryAddress.toLowerCase().includes('san luis');
     const isHMO = o.pickupBranch === 'Hermosillo' || o.deliveryAddress.toLowerCase().includes('hermosillo');
@@ -146,6 +152,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ products, orders, setPr
 
   const newOrders = currentOrders.filter(o => o.status !== 'Entregado');
   const deliveredOrders = currentOrders.filter(o => o.status === 'Entregado');
+  const logisticsOrders = currentOrders.filter(o => o.status === 'Elaborado');
 
   const updateOrderStatus = async (orderId: string, newStatus: Order['status']) => {
     if (isDemoMode) {
@@ -158,11 +165,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ products, orders, setPr
           .eq('id', orderId);
         if (error) throw error;
 
-        // Update local state by refetching or manual filter
+        // Update local state by manual update
         const updatedOrders = orders.map(o => o.id === orderId ? { ...o, status: newStatus } : o);
-        // Assuming setOrders is passed as prop or handled via parent refresh
-        // For now we rely on the parent Refresh as per App.tsx structure
-        window.location.reload(); // Quick refresh to sync all
+        setOrders(updatedOrders);
       } catch (err) {
         console.error('Error updating status:', err);
         alert('Error al actualizar el estado.');
@@ -208,12 +213,12 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ products, orders, setPr
       if (isAddingProduct) {
         const { error } = await supabase.from('products').insert([payload]);
         if (error) throw error;
+        setProducts([...products, productData]);
       } else {
         const { error } = await supabase.from('products').update(payload).eq('id', editingProduct?.id);
         if (error) throw error;
+        setProducts(products.map(p => p.id === editingProduct?.id ? productData : p));
       }
-
-      window.location.reload();
     } catch (err) {
       console.error('Error saving product:', err);
       alert('Error al guardar el producto.');
@@ -240,10 +245,32 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ products, orders, setPr
         .update({ seasons: finalSeasons })
         .eq('id', productId);
       if (error) throw error;
-      window.location.reload();
+      setProducts(products.map(p => p.id === productId ? { ...p, seasons: finalSeasons } : p));
     } catch (err) {
       console.error('Error updating seasons:', err);
     }
+  };
+
+  const addVariant = () => {
+    const variants = formState.variants || [];
+    setFormState({
+      ...formState,
+      variants: [...variants, { name: '', price: 0 }]
+    });
+  };
+
+  const removeVariant = (index: number) => {
+    const variants = formState.variants || [];
+    setFormState({
+      ...formState,
+      variants: variants.filter((_, i) => i !== index)
+    });
+  };
+
+  const updateVariant = (index: number, field: 'name' | 'price', value: string | number) => {
+    const variants = [...(formState.variants || [])];
+    variants[index] = { ...variants[index], [field]: value };
+    setFormState({ ...formState, variants });
   };
 
   const updateProductPrice = async (productId: string, price: number) => {
@@ -253,9 +280,27 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ products, orders, setPr
         .update({ base_price: price })
         .eq('id', productId);
       if (error) throw error;
-      window.location.reload();
+      setProducts(products.map(p => p.id === productId ? { ...p, basePrice: price } : p));
     } catch (err) {
       console.error('Error updating price:', err);
+    }
+  };
+
+  const handleSaveSettings = async () => {
+    try {
+      const { error } = await supabase
+        .from('store_settings')
+        .upsert({
+          key: 'announcement_message',
+          value: { message: announcement },
+          updated_at: new Date().toISOString()
+        });
+
+      if (error) throw error;
+      alert('Configuración guardada correctamente.');
+    } catch (err) {
+      console.error('Error saving settings:', err);
+      alert('Error al guardar la configuración.');
     }
   };
 
@@ -301,6 +346,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ products, orders, setPr
         <nav className="space-y-3 flex-grow">
           {[
             { id: 'orders', icon: 'fa-receipt', label: 'Pedidos', count: currentOrders.length },
+            { id: 'deliveries', icon: 'fa-truck-fast', label: 'Entregas', count: logisticsOrders.length },
             { id: 'sales', icon: 'fa-chart-line', label: 'Ventas' },
             { id: 'products', icon: 'fa-wand-magic-sparkles', label: 'Catálogo' },
             { id: 'settings', icon: 'fa-palette', label: 'Personalización' }
@@ -341,6 +387,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ products, orders, setPr
           <div>
             <h1 className="text-5xl md:text-6xl font-black text-asarum-dark uppercase tracking-tighter leading-none">
               {activeTab === 'orders' && 'Pedidos'}
+              {activeTab === 'deliveries' && 'Logística de Entregas'}
               {activeTab === 'sales' && 'Ventas'}
               {activeTab === 'products' && 'Catálogo'}
               {activeTab === 'settings' && 'Ajustes'}
@@ -440,6 +487,16 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ products, orders, setPr
                               PAGADO
                             </span>
                           )}
+                          <span className={`text-[9px] font-black px-3 py-1 rounded-full uppercase flex items-center gap-1.5 shadow-sm border border-asarum-dark/5 ${order.status === 'Entregado' ? 'bg-green-50 text-green-600 border-green-100' :
+                            order.status === 'Elaborado' ? 'bg-amber-50 text-amber-600 border-amber-100' :
+                              'bg-red-50 text-asarum-red border-red-100'
+                            }`}>
+                            <i className={`fa-solid ${order.status === 'Entregado' ? 'fa-check-double' :
+                              order.status === 'Elaborado' ? 'fa-wand-magic-sparkles' :
+                                'fa-clock animate-pulse'
+                              } text-xs`}></i>
+                            {order.status}
+                          </span>
                           <span className={`text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-widest ${order.deliveryType === 'pickup' ? 'bg-asarum-indigo text-white' : 'bg-asarum-slate text-white'
                             }`}>
                             <i className={`fa-solid ${order.deliveryType === 'pickup' ? 'fa-store' : 'fa-truck'} mr-1.5`}></i>
@@ -554,12 +611,31 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ products, orders, setPr
                         >
                           Ver Detalles
                         </button>
-                        <button
-                          onClick={() => updateOrderStatus(order.id, 'Entregado')}
-                          className="glass-morphism text-asarum-dark border-asarum-red/10 px-6 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-white transition-colors active:scale-95"
-                        >
-                          Marcar Entregado
-                        </button>
+                        {order.status === 'Pendiente' && (
+                          <button
+                            onClick={() => updateOrderStatus(order.id, 'Elaborado')}
+                            className="bg-asarum-red text-white px-6 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:shadow-xl transition-all active:scale-95"
+                          >
+                            Marcar Elaborado
+                          </button>
+                        )}
+                        {order.status !== 'Entregado' && (
+                          <button
+                            onClick={() => updateOrderStatus(order.id, 'Entregado')}
+                            className="glass-morphism text-asarum-dark border-asarum-red/10 px-6 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-white transition-colors active:scale-95"
+                          >
+                            Marcar Entregado
+                          </button>
+                        )}
+                        {order.status === 'Elaborado' && (
+                          <button
+                            onClick={() => updateOrderStatus(order.id, 'Pendiente')}
+                            className="text-[9px] font-black text-asarum-slate uppercase tracking-widest hover:text-asarum-red transition-colors flex items-center justify-center gap-1 mt-1"
+                          >
+                            <i className="fa-solid fa-rotate-left"></i>
+                            Volver a NO ELABORADO
+                          </button>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -593,7 +669,14 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ products, orders, setPr
                               <p className="text-xs font-black text-asarum-dark uppercase tracking-tight">{order.receiverName}</p>
                               <span className="text-[9px] font-black text-asarum-slate opacity-40">#{order.id}</span>
                             </div>
-                            <p className="text-[9px] font-black text-asarum-slate uppercase tracking-widest mt-0.5">{order.date} • {order.items.length} artículos</p>
+                            <p className="text-[9px] font-black text-asarum-slate uppercase tracking-widest mt-0.5">
+                              {order.date} • {order.items.length} artículos
+                              {order.deliveryType === 'delivery' && (
+                                <span className="text-asarum-red font-black ml-1">
+                                  • {order.deliveryAddress.split(',').length > 1 ? order.deliveryAddress.split(',')[1].trim() : order.deliveryAddress}
+                                </span>
+                              )}
+                            </p>
                           </div>
                         </div>
                         <div className="flex items-center gap-8">
@@ -606,6 +689,13 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ products, orders, setPr
                             className="p-3 rounded-xl bg-slate-50 text-asarum-slate hover:bg-asarum-dark hover:text-white transition-all shadow-sm"
                           >
                             <i className="fa-solid fa-eye text-[10px]"></i>
+                          </button>
+                          <button
+                            onClick={() => updateOrderStatus(order.id, 'Elaborado')}
+                            className="p-3 rounded-xl bg-slate-50 text-asarum-slate hover:bg-asarum-red hover:text-white transition-all shadow-sm"
+                            title="Reactivar Pedido (Volver a Elaborado)"
+                          >
+                            <i className="fa-solid fa-rotate-left text-[10px]"></i>
                           </button>
                         </div>
                       </div>
@@ -723,6 +813,244 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ products, orders, setPr
           </div>
         )}
 
+        {/* Tab Content: Deliveries (Logistics) */}
+        {activeTab === 'deliveries' && (
+          <div className="space-y-12">
+            {/* Logistics Summary Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {[
+                { label: 'Pedidos totales', val: logisticsOrders.length + deliveredOrders.length, icon: 'fa-truck-ramp-box', color: 'text-asarum-indigo', bg: 'bg-indigo-50' },
+                { label: 'Entregados', val: deliveredOrders.length, icon: 'fa-circle-check', color: 'text-green-600', bg: 'bg-green-50' },
+                { label: 'Por entregar', val: logisticsOrders.length, icon: 'fa-box-open', color: 'text-asarum-red', bg: 'bg-red-50' }
+              ].map((stat, i) => (
+                <div key={i} className="glass-card p-8 border-white flex items-center gap-6 shadow-sm">
+                  <div className={`w-14 h-14 rounded-2xl ${stat.bg} ${stat.color} flex items-center justify-center text-2xl shadow-inner`}>
+                    <i className={`fa-solid ${stat.icon}`}></i>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-black text-asarum-slate uppercase tracking-widest opacity-60">{stat.label}</p>
+                    <p className="text-4xl font-black text-asarum-dark">{stat.val}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="space-y-6">
+              <div className="flex items-center gap-3 px-2">
+                <i className="fa-solid fa-route text-asarum-red animate-pulse"></i>
+                <h3 className="text-xs font-black text-asarum-dark uppercase tracking-[0.2em]">Ruta de Entrega (Pedidos Elaborados)</h3>
+              </div>
+
+              {logisticsOrders.length === 0 ? (
+                <div className="glass-card p-20 text-center border-dashed border-2 border-slate-100">
+                  <i className="fa-solid fa-clipboard-list text-5xl text-asarum-slate/10 mb-4 block"></i>
+                  <p className="text-asarum-slate font-black uppercase tracking-widest text-[10px] opacity-40">No hay pedidos listos para entrega directa</p>
+                </div>
+              ) : (
+                logisticsOrders.map(order => (
+                  <div key={order.id} className="glass-card p-8 flex flex-col xl:flex-row gap-10 items-start xl:items-center border-2 border-white/60 hover:border-asarum-red/20 transition-all shadow-xl">
+                    <div className="flex-grow space-y-6">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                          <span className="text-[11px] font-black text-white bg-asarum-red px-3 py-1 rounded-full uppercase tracking-widest shadow-sm">ID: #{order.id}</span>
+                          <span className={`text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest flex items-center gap-2 ${order.deliveryType === 'pickup' ? 'bg-asarum-indigo/10 text-asarum-indigo' : 'bg-asarum-dark/10 text-asarum-dark'
+                            }`}>
+                            <i className={`fa-solid ${order.deliveryType === 'pickup' ? 'fa-store' : 'fa-truck'}`}></i>
+                            {order.deliveryType === 'pickup' ? 'RECOGER EN TIENDA' : 'ENTREGA A DOMICILIO'}
+                          </span>
+                        </div>
+                        <span className="text-[10px] font-black uppercase text-asarum-slate bg-slate-100 px-3 py-1 rounded-full">
+                          <i className="fa-solid fa-calendar mr-1.5 opacity-40"></i> {order.date}
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+                        <div>
+                          <p className="text-[10px] font-black text-asarum-slate uppercase tracking-widest mb-2 opacity-60">Dirección Logística</p>
+                          <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 flex items-start gap-4">
+                            <i className="fa-solid fa-location-dot text-asarum-red text-xl mt-1"></i>
+                            <div className="space-y-2">
+                              <p className="text-sm font-black text-asarum-dark leading-snug">{order.deliveryAddress}</p>
+                              {order.qrAccess ? (
+                                <div className="p-3 rounded-xl bg-amber-100/50 border border-amber-200">
+                                  <p className="text-[9px] font-black text-amber-800 uppercase flex items-center gap-2">
+                                    <i className="fa-solid fa-qrcode"></i> REQUIERE QR DE ACCESO
+                                  </p>
+                                </div>
+                              ) : order.gateCode ? (
+                                <p className="text-[10px] font-bold text-asarum-red flex items-center gap-2">
+                                  <i className="fa-solid fa-key"></i> CLAVE ACCESO: {order.gateCode}
+                                </p>
+                              ) : null}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div>
+                          <p className="text-[10px] font-black text-asarum-slate uppercase tracking-widest mb-2 opacity-60">Datos de Recepción (Entrega)</p>
+                          <div className="p-4 rounded-2xl bg-white border border-slate-100">
+                            <p className="text-lg font-black text-asarum-dark uppercase leading-none">{order.receiverName}</p>
+                            <p className="text-[10px] text-asarum-slate font-bold mt-2">{order.receiverPhone}</p>
+                            <div className="flex gap-2 mt-3">
+                              <a
+                                href={`tel:${order.receiverPhone.replace(/\D/g, '')}`}
+                                className="flex-grow py-2 rounded-xl bg-slate-100 text-asarum-dark text-[9px] font-black uppercase text-center hover:bg-asarum-dark hover:text-white transition-all shadow-sm flex items-center justify-center gap-1.5"
+                              >
+                                <i className="fa-solid fa-phone"></i> Llamar
+                              </a>
+                              <a
+                                href={`https://wa.me/${order.receiverPhone.replace(/\D/g, '')}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex-grow py-2 rounded-xl bg-green-50 text-green-600 text-[9px] font-black uppercase text-center hover:bg-green-600 hover:text-white transition-all shadow-sm flex items-center justify-center gap-1.5"
+                              >
+                                <i className="fa-brands fa-whatsapp"></i> WA
+                              </a>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div>
+                          <p className="text-[10px] font-black text-asarum-slate uppercase tracking-widest mb-2 opacity-60">Datos de Remitente (Acceso/Dudas)</p>
+                          <div className="p-4 rounded-2xl bg-white border border-slate-100">
+                            <p className="text-lg font-black text-asarum-dark uppercase leading-none">{order.senderName}</p>
+                            <p className="text-[10px] text-asarum-slate font-bold mt-2">{order.senderPhone}</p>
+                            <div className="flex gap-2 mt-3">
+                              <a
+                                href={`tel:${order.senderPhone.replace(/\D/g, '')}`}
+                                className="flex-grow py-2 rounded-xl bg-slate-100 text-asarum-dark text-[9px] font-black uppercase text-center hover:bg-asarum-dark hover:text-white transition-all shadow-sm flex items-center justify-center gap-1.5"
+                              >
+                                <i className="fa-solid fa-phone"></i> Llamar
+                              </a>
+                              <a
+                                href={`https://wa.me/${order.senderPhone.replace(/\D/g, '')}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex-grow py-2 rounded-xl bg-green-50 text-green-600 text-[9px] font-black uppercase text-center hover:bg-green-600 hover:text-white transition-all shadow-sm flex items-center justify-center gap-1.5"
+                              >
+                                <i className="fa-brands fa-whatsapp"></i> WA
+                              </a>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        <div className="space-y-3">
+                          <p className="text-[10px] font-black text-asarum-slate uppercase tracking-widest flex items-center gap-2">
+                            <i className="fa-solid fa-layer-group"></i> Detalles de Carga ({order.items.length})
+                          </p>
+                          <div className="flex flex-wrap gap-2">
+                            {order.items.map((item, idx) => (
+                              <div key={idx} className="bg-white/60 p-2 rounded-2xl border border-white flex items-center gap-3 shadow-sm min-w-[200px]">
+                                <div className="w-10 h-10 rounded-xl overflow-hidden shadow-sm border border-slate-100 flex-shrink-0">
+                                  <img src={item.productImage} className="w-full h-full object-cover" alt="" />
+                                </div>
+                                <div className="flex-grow">
+                                  <p className="text-[10px] font-black text-asarum-dark uppercase tracking-tight">{item.productName} × {item.quantity}</p>
+                                  <p className="text-[9px] text-asarum-slate uppercase font-bold">{item.variantName}</p>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-black text-asarum-slate uppercase tracking-widest mb-2">Mensaje en la Tarjeta</p>
+                          <div className="p-4 rounded-2xl bg-amber-50/50 border border-amber-100 italic text-asarum-slate text-sm leading-relaxed">
+                            "{order.cardMessage}"
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="w-full xl:w-72 flex flex-col gap-4 xl:border-l border-slate-100 xl:pl-8">
+                      <button
+                        onClick={() => setSelectedOrder(order)}
+                        className="w-full py-4 rounded-2xl bg-slate-100 text-asarum-dark text-[10px] font-black uppercase tracking-widest hover:bg-slate-200 transition-all flex items-center justify-center gap-2"
+                      >
+                        <i className="fa-solid fa-circle-info"></i> Ver Detalles
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (window.confirm('¿Confirmas que entregaste el pedido en la dirección correcta? (Doble chequeo de seguridad)')) {
+                            updateOrderStatus(order.id, 'Entregado');
+                          }
+                        }}
+                        className="w-full py-6 rounded-3xl bg-asarum-red text-white text-[11px] font-black uppercase tracking-widest hover:shadow-2xl hover:scale-[1.02] transition-all shadow-xl flex flex-col items-center gap-1 group"
+                      >
+                        <i className="fa-solid fa-check-double text-xl group-hover:animate-bounce"></i>
+                        MARCAR ENTREGADO
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+              <div className="space-y-6 pt-12 border-t border-slate-200">
+                <div className="flex items-center gap-3 px-2">
+                  <i className="fa-solid fa-box-archive text-asarum-slate opacity-40 text-xs"></i>
+                  <h3 className="text-[10px] font-black text-asarum-slate uppercase tracking-[0.2em] opacity-40">Historial de Entregas Hoy</h3>
+                  <span className="bg-slate-100 text-asarum-slate text-[10px] font-black px-2 py-0.5 rounded-full opacity-40">
+                    {deliveredOrders.length}
+                  </span>
+                </div>
+
+                <div className="space-y-4">
+                  {deliveredOrders.length === 0 ? (
+                    <p className="text-asarum-slate text-[10px] font-black uppercase tracking-widest text-center py-10 opacity-30">No hay entregas finalizadas hoy</p>
+                  ) : (
+                    deliveredOrders.map(order => (
+                      <div key={order.id} className="glass-card p-6 border-white/40 opacity-70 hover:opacity-100 transition-opacity">
+                        <div className="flex flex-wrap items-center justify-between gap-6">
+                          <div className="flex items-center gap-6">
+                            <div className="w-10 h-10 rounded-xl bg-green-50 text-green-600 flex items-center justify-center border border-green-100">
+                              <i className="fa-solid fa-check"></i>
+                            </div>
+                            <div className="text-left">
+                              <div className="flex items-center gap-2">
+                                <p className="text-xs font-black text-asarum-dark uppercase tracking-tight">{order.receiverName}</p>
+                                <span className="text-[9px] font-black text-asarum-slate opacity-40">#{order.id}</span>
+                              </div>
+                              <p className="text-[9px] font-black text-asarum-slate uppercase tracking-widest mt-0.5">
+                                {order.date} • {order.items.length} artículos • {order.deliveryType === 'pickup' ? 'PICKUP' : 'DOMICILIO'}
+                                {order.deliveryType === 'delivery' && (
+                                  <span className="text-asarum-red font-black ml-1">
+                                    • {order.deliveryAddress.split(',').length > 1 ? order.deliveryAddress.split(',')[1].trim() : order.deliveryAddress}
+                                  </span>
+                                )}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-8">
+                            <div className="text-right">
+                              <p className="text-[9px] font-black text-green-600 uppercase tracking-widest">ENTREGADO</p>
+                            </div>
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => setSelectedOrder(order)}
+                                className="p-3 rounded-xl bg-slate-50 text-asarum-slate hover:bg-asarum-dark hover:text-white transition-all shadow-sm"
+                                title="Ver Detalles"
+                              >
+                                <i className="fa-solid fa-circle-info text-[10px]"></i>
+                              </button>
+                              <button
+                                onClick={() => updateOrderStatus(order.id, 'Elaborado')}
+                                className="p-3 rounded-xl bg-slate-50 text-asarum-slate hover:bg-asarum-red hover:text-white transition-all shadow-sm"
+                                title="Reactivar (Volver a Elaborado)"
+                              >
+                                <i className="fa-solid fa-rotate-left text-[10px]"></i>
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Tab Content: Products */}
         {activeTab === 'products' && (
           <div className="glass-card p-0 overflow-hidden border-white">
@@ -784,11 +1112,27 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ products, orders, setPr
                           <span className="text-asarum-red mr-1">$</span>
                           <input
                             type="text"
-                            value={p.basePrice?.toLocaleString()}
+                            value={editingPriceId === p.id ? tempPriceValue : p.basePrice?.toLocaleString()}
+                            onFocus={() => {
+                              setEditingPriceId(p.id);
+                              setTempPriceValue(p.basePrice?.toString() || '0');
+                            }}
                             onChange={(e) => {
-                              const val = e.target.value.replace(/,/g, '');
-                              if (!isNaN(Number(val))) {
-                                updateProductPrice(p.id, Number(val));
+                              const val = e.target.value.replace(/[^0-9.]/g, '');
+                              setTempPriceValue(val);
+                            }}
+                            onBlur={() => {
+                              if (editingPriceId === p.id) {
+                                const newPrice = Number(tempPriceValue);
+                                if (!isNaN(newPrice) && newPrice !== p.basePrice) {
+                                  updateProductPrice(p.id, newPrice);
+                                }
+                                setEditingPriceId(null);
+                              }
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                (e.target as HTMLInputElement).blur();
                               }
                             }}
                             className="bg-transparent w-24 text-right hover:bg-white/50 focus:bg-white focus:shadow-inner p-1 rounded-lg outline-none border-b-2 border-transparent focus:border-asarum-red transition-all font-black"
@@ -879,13 +1223,18 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ products, orders, setPr
                   <label className="text-[10px] font-black text-asarum-slate uppercase tracking-widest ml-1">Mensaje en Barra de Anuncios</label>
                   <input
                     type="text"
+                    value={announcement}
+                    onChange={e => setAnnouncement(e.target.value)}
                     placeholder="Ej: ¡Envío GRATIS este 14 de Febrero!"
                     className="w-full bg-white/50 backdrop-blur-sm px-6 py-4 rounded-2xl border-2 border-transparent focus:border-asarum-red focus:bg-white outline-none transition-all shadow-inner font-bold"
                   />
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4">
-                  <button className="btn-primary py-5 text-[10px] font-black flex items-center justify-center gap-3">
+                  <button
+                    onClick={handleSaveSettings}
+                    className="btn-primary py-5 text-[10px] font-black flex items-center justify-center gap-3"
+                  >
                     <i className="fa-solid fa-save"></i>
                     <span>Guardar Cambios</span>
                   </button>
@@ -1011,6 +1360,63 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ products, orders, setPr
                 ></textarea>
               </div>
 
+              {/* Seccón de Variantes */}
+              <div className="space-y-4 pt-4 border-t border-slate-100">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-[10px] font-black text-asarum-dark uppercase tracking-widest ml-1">Variedades / Tamaños (Opcional)</h4>
+                  <button
+                    type="button"
+                    onClick={addVariant}
+                    className="text-[9px] font-black text-asarum-red uppercase tracking-widest bg-red-50 px-3 py-1 rounded-lg hover:bg-asarum-red hover:text-white transition-all"
+                  >
+                    + Agregar Variedad
+                  </button>
+                </div>
+
+                <div className="space-y-3">
+                  {(formState.variants || []).map((variant, idx) => (
+                    <div key={idx} className="flex gap-4 items-center bg-slate-50 p-4 rounded-2xl border border-transparent focus-within:border-asarum-red/20 transition-all">
+                      <div className="flex-grow space-y-1">
+                        <label className="text-[8px] font-black text-asarum-slate uppercase tracking-widest ml-1">Nombre (ej: 24 Rosas)</label>
+                        <input
+                          type="text"
+                          value={variant.name}
+                          onChange={e => updateVariant(idx, 'name', e.target.value)}
+                          placeholder="Nombre de la variedad"
+                          className="w-full bg-transparent border-none outline-none font-bold text-sm"
+                        />
+                      </div>
+                      <div className="w-28 space-y-1">
+                        <label className="text-[8px] font-black text-asarum-slate uppercase tracking-widest ml-1">Precio ($)</label>
+                        <input
+                          type="text"
+                          value={variant.price || ''}
+                          onChange={e => {
+                            const val = e.target.value.replace(/[^0-9]/g, '');
+                            updateVariant(idx, 'price', Number(val));
+                          }}
+                          placeholder="0"
+                          className="w-full bg-transparent border-none outline-none font-bold text-sm text-right"
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => removeVariant(idx)}
+                        className="w-8 h-8 rounded-lg flex items-center justify-center text-asarum-slate hover:text-asarum-red transition-colors"
+                        title="Eliminar variedad"
+                      >
+                        <i className="fa-solid fa-trash text-xs"></i>
+                      </button>
+                    </div>
+                  ))}
+                  {(formState.variants || []).length === 0 && (
+                    <p className="text-[10px] text-asarum-slate italic text-center py-4 border-2 border-dashed border-slate-100 rounded-2xl">
+                      Este producto no tiene variedades activas.
+                    </p>
+                  )}
+                </div>
+              </div>
+
               <div className="pt-6">
                 <button type="submit" className="w-full btn-primary py-5 text-xs font-black shadow-xl shadow-asarum-red/20">
                   <i className="fa-solid fa-save mr-2"></i>
@@ -1054,7 +1460,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ products, orders, setPr
                     <div className="w-8 h-8 rounded-xl bg-asarum-red/10 text-asarum-red flex items-center justify-center text-xs">
                       <i className="fa-solid fa-paper-plane"></i>
                     </div>
-                    <h4 className="text-[10px] font-black uppercase tracking-widest text-asarum-red">Datos del Remitente</h4>
+                    <h4 className="text-[10px] font-black uppercase tracking-widest text-asarum-red">
+                      {activeTab === 'deliveries' ? 'Datos del Remitente (Acceso/Dudas)' : 'Datos del Remitente'}
+                    </h4>
                   </div>
                   <div className="bg-slate-50/50 p-6 rounded-3xl border border-slate-100 space-y-4">
                     <div>
@@ -1131,12 +1539,17 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ products, orders, setPr
                       <p className="text-[9px] font-black text-asarum-slate uppercase mb-1">Dirección / Sucursal</p>
                       <p className="text-sm font-medium text-asarum-dark italic">{selectedOrder.deliveryAddress}</p>
                     </div>
-                    {selectedOrder.gateCode && (
+                    {selectedOrder.qrAccess ? (
+                      <div className="flex items-center gap-2 bg-amber-100/50 px-3 py-1.5 rounded-lg w-fit border border-amber-200">
+                        <i className="fa-solid fa-qrcode text-[10px] text-amber-800"></i>
+                        <span className="text-[10px] font-black text-amber-800 uppercase text-center">REQUIERE QR DE ACCESO</span>
+                      </div>
+                    ) : selectedOrder.gateCode ? (
                       <div className="flex items-center gap-2 bg-slate-200/50 px-3 py-1.5 rounded-lg w-fit">
                         <i className="fa-solid fa-key text-[10px] text-asarum-slate"></i>
                         <span className="text-[10px] font-black text-asarum-dark uppercase">Código: {selectedOrder.gateCode}</span>
                       </div>
-                    )}
+                    ) : null}
                   </div>
                 </div>
 
@@ -1172,7 +1585,12 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ products, orders, setPr
                       <div className="flex-grow">
                         <p className="text-xs font-black text-asarum-dark uppercase tracking-tight">{item.productName}</p>
                         <p className="text-[10px] font-bold text-asarum-slate uppercase">{item.variantName}</p>
-                        <p className="text-xs font-black text-asarum-red mt-1">${item.price.toLocaleString()} × {item.quantity}</p>
+                        {activeTab !== 'deliveries' && (
+                          <p className="text-xs font-black text-asarum-red mt-1">${item.price.toLocaleString()} × {item.quantity}</p>
+                        )}
+                        {activeTab === 'deliveries' && (
+                          <p className="text-xs font-black text-asarum-slate mt-1">Cantidad: {item.quantity}</p>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -1183,21 +1601,39 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ products, orders, setPr
             {/* Footer del Modal */}
             <div className="p-8 border-t border-slate-100 bg-slate-50/80 flex flex-wrap items-center justify-between gap-6">
               <div className="flex items-center gap-6">
-                <div>
-                  <p className="text-[9px] font-black text-asarum-slate uppercase tracking-widest mb-1">Total Pagado</p>
-                  <p className="text-3xl font-black text-asarum-dark">${selectedOrder.total.toLocaleString()}</p>
-                </div>
-                <div className="h-10 w-px bg-slate-200"></div>
+                {activeTab !== 'deliveries' && (
+                  <>
+                    <div>
+                      <p className="text-[9px] font-black text-asarum-slate uppercase tracking-widest mb-1">Total Pagado</p>
+                      <p className="text-3xl font-black text-asarum-dark">${selectedOrder.total.toLocaleString()}</p>
+                    </div>
+                    <div className="h-10 w-px bg-slate-200"></div>
+                  </>
+                )}
                 <div>
                   <p className="text-[9px] font-black text-asarum-slate uppercase tracking-widest mb-1">Estado</p>
                   <div className="flex items-center gap-2">
-                    <span className={`w-2 h-2 rounded-full ${selectedOrder.status === 'Entregado' ? 'bg-green-500' : 'bg-asarum-red animate-pulse'}`}></span>
+                    <span className={`w-2 h-2 rounded-full ${selectedOrder.status === 'Entregado' ? 'bg-green-500' :
+                      selectedOrder.status === 'Elaborado' ? 'bg-amber-500' :
+                        'bg-asarum-red animate-pulse'
+                      }`}></span>
                     <p className="text-xs font-black text-asarum-dark uppercase tracking-widest">{selectedOrder.status}</p>
                   </div>
                 </div>
               </div>
 
               <div className="flex gap-3">
+                {selectedOrder.status === 'Pendiente' && (
+                  <button
+                    onClick={() => {
+                      updateOrderStatus(selectedOrder.id, 'Elaborado');
+                      setSelectedOrder(null);
+                    }}
+                    className="bg-asarum-red text-white px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:shadow-xl transition-all active:scale-95"
+                  >
+                    Marcar como Elaborado
+                  </button>
+                )}
                 {selectedOrder.status !== 'Entregado' && (
                   <button
                     onClick={() => {
@@ -1207,6 +1643,30 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ products, orders, setPr
                     className="bg-asarum-dark text-white px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-asarum-red transition-all shadow-xl active:scale-95"
                   >
                     Marcar como Entregado
+                  </button>
+                )}
+                {selectedOrder.status === 'Elaborado' && (
+                  <button
+                    onClick={() => {
+                      updateOrderStatus(selectedOrder.id, 'Pendiente');
+                      setSelectedOrder(null);
+                    }}
+                    className="bg-white text-asarum-slate border border-slate-200 px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 transition-all active:scale-95"
+                  >
+                    <i className="fa-solid fa-rotate-left mr-2"></i>
+                    Volver a NO ELABORADO
+                  </button>
+                )}
+                {selectedOrder.status === 'Entregado' && (
+                  <button
+                    onClick={() => {
+                      updateOrderStatus(selectedOrder.id, 'Elaborado');
+                      setSelectedOrder(null);
+                    }}
+                    className="bg-white text-asarum-slate border border-slate-200 px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 transition-all active:scale-95"
+                  >
+                    <i className="fa-solid fa-rotate-left mr-2"></i>
+                    Reactivar Pedido
                   </button>
                 )}
                 <button

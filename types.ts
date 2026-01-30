@@ -50,7 +50,7 @@ export interface Order {
   gateCode?: string;
   qrAccess?: boolean;
   cardMessage: string;
-  status: 'Pendiente' | 'En Camino' | 'Entregado';
+  status: 'Pendiente' | 'Elaborado' | 'En Camino' | 'Entregado';
   paymentStatus: 'pending' | 'paid' | 'failed';
   stripePaymentIntentId?: string;
 }

@@ -326,7 +326,7 @@ const Home: React.FC<HomeProps> = ({ products, season }) => {
               }`}></div>
             <div className="relative z-10 aspect-[4/5] rounded-[4rem] overflow-hidden shadow-2xl border-8 border-white">
               <img
-                src={isValentines ? 'valentines-philosophy-final.png' : 'https://images.unsplash.com/photo-1526047932273-341f2a7631f9?auto=format&fit=crop&q=80&w=1000'}
+                src={isValentines ? 'valentines-philosophy-v3.png' : 'https://images.unsplash.com/photo-1526047932273-341f2a7631f9?auto=format&fit=crop&q=80&w=1000'}
                 alt="Filosofía Asarum"
                 className="w-full h-full object-cover"
               />
