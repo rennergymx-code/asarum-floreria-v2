@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Product, Order, Season } from '../types';
+import { Product, Order, Season, UserProfile } from '../types';
 import { supabase } from '../lib/supabase';
 
 interface AdminDashboardProps {
@@ -12,18 +12,43 @@ interface AdminDashboardProps {
   logout: () => void;
   announcement: string;
   setAnnouncement: (a: string) => void;
+  userProfile: UserProfile | null;
 }
 
-const AdminDashboard: React.FC<AdminDashboardProps> = ({ products, orders, setProducts, setOrders, season, setSeason, logout, announcement, setAnnouncement }) => {
-  const [activeTab, setActiveTab] = useState<'orders' | 'products' | 'settings' | 'sales' | 'deliveries'>('orders');
+const AdminDashboard: React.FC<AdminDashboardProps> = ({ products, orders, setProducts, setOrders, season, setSeason, logout, announcement, setAnnouncement, userProfile }) => {
+  const [activeTab, setActiveTab] = useState<'orders' | 'products' | 'settings' | 'sales' | 'deliveries' | 'users'>(
+    userProfile?.role === 'choferes' ? 'deliveries' : 'orders'
+  );
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [isAddingProduct, setIsAddingProduct] = useState(false);
   const [formState, setFormState] = useState<Partial<Product>>({});
   const [isDemoMode, setIsDemoMode] = useState(false);
-  const [branchFilter, setBranchFilter] = useState<'Hermosillo' | 'San Luis Río Colorado' | 'Todas'>('Todas');
+  const [branchFilter, setBranchFilter] = useState<'Hermosillo' | 'San Luis Río Colorado' | 'Todas'>(
+    userProfile?.role === 'administrador general' ? 'Todas' : (userProfile?.branch || 'Todas')
+  );
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [editingPriceId, setEditingPriceId] = useState<string | null>(null);
   const [tempPriceValue, setTempPriceValue] = useState<string>('');
+  const [profiles, setProfiles] = useState<UserProfile[]>([]);
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [editingProfileId, setEditingProfileId] = useState<string | null>(null);
+  const [profileForm, setProfileForm] = useState<Partial<UserProfile>>({});
+
+  const fetchProfiles = async () => {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (data && !error) {
+      setProfiles(data as UserProfile[]);
+    }
+  };
+
+  React.useEffect(() => {
+    if (activeTab === 'users') {
+      fetchProfiles();
+    }
+  }, [activeTab]);
 
   const [demoOrdersState, setDemoOrdersState] = useState<Order[]>([
     {
@@ -172,6 +197,30 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ products, orders, setPr
         console.error('Error updating status:', err);
         alert('Error al actualizar el estado.');
       }
+    }
+  };
+
+  const saveProfile = async () => {
+    if (!profileForm.email || !editingProfileId) return;
+
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          full_name: profileForm.full_name,
+          role: profileForm.role,
+          branch: profileForm.branch
+        })
+        .eq('id', editingProfileId);
+
+      if (error) throw error;
+
+      setIsEditingProfile(false);
+      fetchProfiles();
+      alert('Perfil actualizado con éxito');
+    } catch (err) {
+      console.error('Error updating profile:', err);
+      alert('Error al actualizar el perfil.');
     }
   };
 
@@ -345,12 +394,13 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ products, orders, setPr
 
         <nav className="space-y-3 flex-grow">
           {[
-            { id: 'orders', icon: 'fa-receipt', label: 'Pedidos', count: currentOrders.length },
-            { id: 'deliveries', icon: 'fa-truck-fast', label: 'Entregas', count: logisticsOrders.length },
-            { id: 'sales', icon: 'fa-chart-line', label: 'Ventas' },
-            { id: 'products', icon: 'fa-wand-magic-sparkles', label: 'Catálogo' },
-            { id: 'settings', icon: 'fa-palette', label: 'Personalización' }
-          ].map((tab) => (
+            { id: 'orders', icon: 'fa-receipt', label: 'Pedidos', count: currentOrders.length, roles: ['administrador general', 'ventas', 'floristas'] },
+            { id: 'deliveries', icon: 'fa-truck-fast', label: 'Entregas', count: logisticsOrders.length, roles: ['administrador general', 'ventas', 'choferes'] },
+            { id: 'sales', icon: 'fa-chart-line', label: 'Ventas', roles: ['administrador general'] },
+            { id: 'products', icon: 'fa-wand-magic-sparkles', label: 'Catálogo', roles: ['administrador general'] },
+            { id: 'settings', icon: 'fa-palette', label: 'Personalización', roles: ['administrador general'] },
+            { id: 'users', icon: 'fa-users', label: 'Usuarios', roles: ['administrador general'] }
+          ].filter(tab => !userProfile || tab.roles.includes(userProfile.role)).map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id as any)}
@@ -395,7 +445,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ products, orders, setPr
             <div className="flex flex-wrap items-center gap-4 mt-3">
               <p className="text-asarum-slate font-black uppercase tracking-[0.2em] text-[10px] flex items-center gap-2">
                 <span className="w-2 h-2 rounded-full bg-asarum-red animate-pulse"></span>
-                Sesión de administrador activa
+                Sesión: <span className="text-asarum-dark">{userProfile?.full_name || userProfile?.email || 'Administrador'}</span>
+                <span className="opacity-40">({userProfile?.role || 'Full Access'})</span>
               </p>
               <button
                 onClick={() => setIsDemoMode(!isDemoMode)}
@@ -408,20 +459,22 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ products, orders, setPr
                 {isDemoMode ? 'Modo Demo Activo' : 'Activar Modo Demo'}
               </button>
 
-              <div className="flex bg-white/60 p-1 rounded-2xl border border-slate-200 ml-2">
-                {['Todas', 'Hermosillo', 'San Luis Río Colorado'].map((b) => (
-                  <button
-                    key={b}
-                    onClick={() => setBranchFilter(b as any)}
-                    className={`px-4 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${branchFilter === b
-                      ? 'bg-asarum-dark text-white shadow-md'
-                      : 'text-asarum-slate hover:bg-slate-50'
-                      }`}
-                  >
-                    {b === 'San Luis Río Colorado' ? 'SLRC' : b}
-                  </button>
-                ))}
-              </div>
+              {userProfile?.role === 'administrador general' && (
+                <div className="flex bg-white/60 p-1 rounded-2xl border border-slate-200 ml-2">
+                  {['Todas', 'Hermosillo', 'San Luis Río Colorado'].map((b) => (
+                    <button
+                      key={b}
+                      onClick={() => setBranchFilter(b as any)}
+                      className={`px-4 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${branchFilter === b
+                        ? 'bg-asarum-dark text-white shadow-md'
+                        : 'text-asarum-slate hover:bg-slate-50'
+                        }`}
+                    >
+                      {b === 'San Luis Río Colorado' ? 'SLRC' : b}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
@@ -611,7 +664,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ products, orders, setPr
                         >
                           Ver Detalles
                         </button>
-                        {order.status === 'Pendiente' && (
+                        {order.status === 'Pendiente' && (userProfile?.role === 'administrador general' || userProfile?.role === 'ventas' || userProfile?.role === 'floristas') && (
                           <button
                             onClick={() => updateOrderStatus(order.id, 'Elaborado')}
                             className="bg-asarum-red text-white px-6 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:shadow-xl transition-all active:scale-95"
@@ -619,7 +672,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ products, orders, setPr
                             Marcar Elaborado
                           </button>
                         )}
-                        {order.status !== 'Entregado' && (
+                        {order.status !== 'Entregado' && (userProfile?.role === 'administrador general' || userProfile?.role === 'ventas' || userProfile?.role === 'choferes') && (
                           <button
                             onClick={() => updateOrderStatus(order.id, 'Entregado')}
                             className="glass-morphism text-asarum-dark border-asarum-red/10 px-6 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-white transition-colors active:scale-95"
@@ -1032,13 +1085,15 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ products, orders, setPr
                               >
                                 <i className="fa-solid fa-circle-info text-[10px]"></i>
                               </button>
-                              <button
-                                onClick={() => updateOrderStatus(order.id, 'Elaborado')}
-                                className="p-3 rounded-xl bg-slate-50 text-asarum-slate hover:bg-asarum-red hover:text-white transition-all shadow-sm"
-                                title="Reactivar (Volver a Elaborado)"
-                              >
-                                <i className="fa-solid fa-rotate-left text-[10px]"></i>
-                              </button>
+                              {(userProfile?.role === 'administrador general' || userProfile?.role === 'ventas') && (
+                                <button
+                                  onClick={() => updateOrderStatus(order.id, 'Elaborado')}
+                                  className="p-3 rounded-xl bg-slate-50 text-asarum-slate hover:bg-asarum-red hover:text-white transition-all shadow-sm"
+                                  title="Reactivar (Volver a Elaborado)"
+                                >
+                                  <i className="fa-solid fa-rotate-left text-[10px]"></i>
+                                </button>
+                              )}
                             </div>
                           </div>
                         </div>
@@ -1167,10 +1222,102 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ products, orders, setPr
           </div>
         )}
 
-        {/* Tab Content: Settings (SEASON SWITCH) */}
+        {/* Tab Content: Users */}
+        {activeTab === 'users' && (
+          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="flex justify-between items-center bg-white/40 backdrop-blur-md p-8 rounded-3xl border border-white/60 shadow-xl">
+              <div>
+                <h3 className="text-3xl font-black text-asarum-dark uppercase tracking-tight">Gestión de Usuarios</h3>
+                <p className="text-xs font-bold text-asarum-slate uppercase tracking-widest mt-1">Control de acceso y permisos por sucursal</p>
+              </div>
+              <p className="text-[10px] font-black text-asarum-slate uppercase max-w-xs text-right opacity-60">
+                Nota: Los usuarios deben estar registrados en la plataforma para que puedas asignarles roles.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+              {profiles.map(p => (
+                <div key={p.id} className="glass-card p-6 flex flex-col gap-6 hover:shadow-2xl transition-all border-white/60 group">
+                  <div className="flex justify-between items-start">
+                    <div className="w-12 h-12 rounded-2xl bg-asarum-red/10 text-asarum-red flex items-center justify-center text-xl shadow-inner uppercase font-black">
+                      {p.full_name?.charAt(0) || p.email.charAt(0)}
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => {
+                          setEditingProfileId(p.id);
+                          setProfileForm(p);
+                          setIsEditingProfile(true);
+                        }}
+                        className="p-2 rounded-lg bg-slate-100 text-asarum-slate hover:bg-asarum-dark hover:text-white transition-all shadow-sm"
+                      >
+                        <i className="fa-solid fa-pen text-[10px]"></i>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h4 className="text-lg font-black text-asarum-dark uppercase tracking-tight">{p.full_name || 'Sin Nombre'}</h4>
+                    <p className="text-xs font-medium text-asarum-slate">{p.email}</p>
+                  </div>
+
+                  <div className="flex flex-wrap gap-2">
+                    <span className="px-3 py-1 rounded-full bg-asarum-dark text-white text-[9px] font-black uppercase tracking-widest">
+                      {p.role}
+                    </span>
+                    <span className="px-3 py-1 rounded-full bg-asarum-red/10 text-asarum-red text-[9px] font-black uppercase tracking-widest">
+                      {p.branch === 'Todas' ? 'Todas las Sucursales' : p.branch}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Tab Content: Settings */}
         {activeTab === 'settings' && (
-          <div className="max-w-4xl space-y-10">
-            <div className="glass-card p-10 border-white">
+          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            {/* Global Announcement */}
+            <div className="glass-card p-8 border-white bg-white/40 backdrop-blur-md shadow-2xl">
+              <div className="flex items-center gap-4 mb-10">
+                <div className="w-12 h-12 rounded-2xl bg-asarum-red/10 text-asarum-red flex items-center justify-center text-xl shadow-inner">
+                  <i className="fa-solid fa-bullhorn animate-bounce-subtle"></i>
+                </div>
+                <div>
+                  <h3 className="text-3xl font-black text-asarum-dark uppercase tracking-tight">Anuncio Global</h3>
+                  <p className="text-xs font-bold text-asarum-slate uppercase tracking-widest mt-1">Banner superior en toda la plataforma</p>
+                </div>
+              </div>
+
+              <div className="space-y-6 max-w-4xl">
+                <div className="space-y-3">
+                  <label className="text-[10px] font-black text-asarum-slate uppercase tracking-widest ml-1">Mensaje del Banner</label>
+                  <div className="relative group">
+                    <input
+                      type="text"
+                      className="w-full pl-6 pr-20 py-5 rounded-3xl glass-morphism border-2 border-white focus:bg-white focus:border-asarum-red focus:shadow-2xl outline-none transition-all font-bold text-asarum-dark shadow-lg no-resize"
+                      placeholder="Ej: ¡Envíos gratis este 14 de Febrero!"
+                      value={announcement}
+                      onChange={e => setAnnouncement(e.target.value)}
+                    />
+                    <button
+                      onClick={async () => {
+                        const { error } = await supabase
+                          .from('store_settings')
+                          .upsert({ key: 'announcement_message', value: { message: announcement } });
+                        if (!error) alert('Mensaje actualizado correctamente');
+                      }}
+                      className="absolute right-3 top-3 bottom-3 px-6 rounded-2xl bg-asarum-dark text-white text-[9px] font-black uppercase tracking-widest shadow-xl hover:bg-asarum-red transition-all"
+                    >
+                      Guardar
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="glass-card p-10 border-white bg-white/40 backdrop-blur-md shadow-2xl">
               <div className="flex items-center gap-4 mb-10">
                 <div className="w-14 h-14 rounded-3xl bg-asarum-red text-white flex items-center justify-center text-2xl shadow-xl shadow-asarum-red/20">
                   <i className="fa-solid fa-moon"></i>
@@ -1195,7 +1342,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ products, orders, setPr
                       <i className={`fa-solid ${s.icon}`}></i>
                     </div>
 
-                    <div className={`w-12 h-12 rounded-2xl ${s.bg} ${s.color} flex items-center justify-center text-xl mb-6 shadow-sm border border-white`}>
+                    <div className="w-12 h-12 rounded-2xl bg-asarum-red text-white flex items-center justify-center text-xl mb-6 shadow-sm border border-white">
                       <i className={`fa-solid ${s.icon}`}></i>
                     </div>
 
@@ -1623,7 +1770,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ products, orders, setPr
               </div>
 
               <div className="flex gap-3">
-                {selectedOrder.status === 'Pendiente' && (
+                {selectedOrder.status === 'Pendiente' && (userProfile?.role === 'administrador general' || userProfile?.role === 'ventas' || userProfile?.role === 'floristas') && (
                   <button
                     onClick={() => {
                       updateOrderStatus(selectedOrder.id, 'Elaborado');
@@ -1634,7 +1781,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ products, orders, setPr
                     Marcar como Elaborado
                   </button>
                 )}
-                {selectedOrder.status !== 'Entregado' && (
+                {selectedOrder.status !== 'Entregado' && (userProfile?.role === 'administrador general' || userProfile?.role === 'ventas' || userProfile?.role === 'choferes') && (
                   <button
                     onClick={() => {
                       updateOrderStatus(selectedOrder.id, 'Entregado');
@@ -1645,7 +1792,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ products, orders, setPr
                     Marcar como Entregado
                   </button>
                 )}
-                {selectedOrder.status === 'Elaborado' && (
+                {selectedOrder.status === 'Elaborado' && (userProfile?.role === 'administrador general' || userProfile?.role === 'ventas') && (
                   <button
                     onClick={() => {
                       updateOrderStatus(selectedOrder.id, 'Pendiente');
@@ -1675,6 +1822,84 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ products, orders, setPr
                 >
                   <i className="fa-solid fa-print mr-2"></i>
                   Imprimir Orden
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Modal: Editar Perfil */}
+      {isEditingProfile && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-asarum-dark/40 backdrop-blur-md" onClick={() => setIsEditingProfile(false)}></div>
+          <div className="relative w-full max-w-xl bg-white/90 backdrop-blur-2xl rounded-[40px] shadow-2xl border border-white overflow-hidden animate-in zoom-in-95 duration-300">
+            <div className="p-10">
+              <div className="flex justify-between items-start mb-10">
+                <div>
+                  <h3 className="text-3xl font-black text-asarum-dark uppercase tracking-tight">Editar Perfil</h3>
+                  <p className="text-xs font-bold text-asarum-slate uppercase tracking-widest mt-1">Configura permisos y sucursal</p>
+                </div>
+                <button onClick={() => setIsEditingProfile(false)} className="w-12 h-12 rounded-2xl bg-slate-50 text-asarum-slate hover:bg-asarum-red hover:text-white transition-all">
+                  <i className="fa-solid fa-xmark"></i>
+                </button>
+              </div>
+
+              <div className="space-y-6">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-asarum-slate uppercase tracking-widest ml-1">Nombre Completo</label>
+                  <input
+                    type="text"
+                    value={profileForm.full_name || ''}
+                    onChange={e => setProfileForm({ ...profileForm, full_name: e.target.value })}
+                    className="w-full bg-slate-50 px-6 py-4 rounded-2xl border-2 border-transparent focus:border-asarum-red focus:bg-white outline-none transition-all font-bold"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-asarum-slate uppercase tracking-widest ml-1">Email (Solo Lectura)</label>
+                  <input
+                    type="text"
+                    disabled
+                    value={profileForm.email || ''}
+                    className="w-full bg-slate-100 px-6 py-4 rounded-2xl border-2 border-transparent outline-none transition-all font-bold text-asarum-slate opacity-60"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-asarum-slate uppercase tracking-widest ml-1">Rol / Permisos</label>
+                    <select
+                      value={profileForm.role || ''}
+                      onChange={e => setProfileForm({ ...profileForm, role: e.target.value as any })}
+                      className="w-full bg-slate-50 px-6 py-4 rounded-2xl border-2 border-transparent focus:border-asarum-red focus:bg-white outline-none transition-all font-bold appearance-none"
+                    >
+                      <option value="administrador general">Administrador General</option>
+                      <option value="ventas">Ventas</option>
+                      <option value="floristas">Floristas</option>
+                      <option value="choferes">Choferes</option>
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-asarum-slate uppercase tracking-widest ml-1">Sucursal Asignada</label>
+                    <select
+                      value={profileForm.branch || ''}
+                      onChange={e => setProfileForm({ ...profileForm, branch: e.target.value as any })}
+                      className="w-full bg-slate-50 px-6 py-4 rounded-2xl border-2 border-transparent focus:border-asarum-red focus:bg-white outline-none transition-all font-bold appearance-none"
+                    >
+                      <option value="Hermosillo">Hermosillo</option>
+                      <option value="San Luis Río Colorado">San Luis Río Colorado</option>
+                      <option value="Todas">Todas (Solo Admin)</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-12 flex gap-4">
+                <button onClick={() => setIsEditingProfile(false)} className="flex-grow py-5 rounded-2xl bg-white border border-slate-200 text-asarum-slate text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 transition-all">
+                  Cancelar
+                </button>
+                <button onClick={saveProfile} className="flex-grow py-5 rounded-2xl bg-asarum-dark text-white text-[10px] font-black uppercase tracking-widest shadow-xl hover:bg-asarum-red transition-all">
+                  Guardar Cambios
                 </button>
               </div>
             </div>

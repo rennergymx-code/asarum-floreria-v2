@@ -54,3 +54,14 @@ export interface Order {
   paymentStatus: 'pending' | 'paid' | 'failed';
   stripePaymentIntentId?: string;
 }
+
+export type UserRole = 'administrador general' | 'ventas' | 'floristas' | 'choferes';
+
+export interface UserProfile {
+  id: string;
+  email: string;
+  full_name?: string;
+  role: UserRole;
+  branch: 'Hermosillo' | 'San Luis Río Colorado' | 'Todas';
+  created_at?: string;
+}

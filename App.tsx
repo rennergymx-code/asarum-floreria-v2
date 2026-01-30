@@ -12,7 +12,7 @@ import AdminLogin from './pages/AdminLogin';
 import AdminDashboard from './pages/AdminDashboard';
 import Terms from './pages/Terms';
 import Privacy from './pages/Privacy';
-import { CartItem, Product, Season, Order } from './types';
+import { CartItem, Product, Season, Order, UserProfile } from './types';
 import { INITIAL_PRODUCTS } from './constants';
 import CookieBanner from './components/CookieBanner';
 import ScrollToTop from './components/ScrollToTop';
@@ -31,9 +31,11 @@ const AppContent: React.FC<{
   setCurrentSeason: React.Dispatch<React.SetStateAction<Season>>;
   isAdmin: boolean;
   setIsAdmin: React.Dispatch<React.SetStateAction<boolean>>;
+  userProfile: UserProfile | null;
+  setUserProfile: React.Dispatch<React.SetStateAction<UserProfile | null>>;
   announcement: string;
   setAnnouncement: React.Dispatch<React.SetStateAction<string>>;
-}> = ({ products, setProducts, cart, setCart, orders, setOrders, currentSeason, setCurrentSeason, isAdmin, setIsAdmin, announcement, setAnnouncement }) => {
+}> = ({ products, setProducts, cart, setCart, orders, setOrders, currentSeason, setCurrentSeason, isAdmin, setIsAdmin, userProfile, setUserProfile, announcement, setAnnouncement }) => {
   const location = useLocation();
 
   useEffect(() => {
@@ -87,7 +89,7 @@ const AppContent: React.FC<{
           <Route path="/admin/login" element={<AdminLogin setIsAdmin={setIsAdmin} />} />
           <Route
             path="/admin/dashboard"
-            element={isAdmin ? <AdminDashboard products={products} orders={orders} setProducts={setProducts} setOrders={setOrders} season={currentSeason} setSeason={setCurrentSeason} logout={() => setIsAdmin(false)} announcement={announcement} setAnnouncement={setAnnouncement} /> : <Navigate to="/admin/login" />}
+            element={isAdmin ? <AdminDashboard products={products} orders={orders} setProducts={setProducts} setOrders={setOrders} season={currentSeason} setSeason={setCurrentSeason} logout={() => supabase.auth.signOut()} announcement={announcement} setAnnouncement={setAnnouncement} userProfile={userProfile} /> : <Navigate to="/admin/login" />}
           />
           <Route path="/terminos-y-condiciones" element={<Terms />} />
           <Route path="/politica-de-privacidad" element={<Privacy />} />
@@ -140,6 +142,38 @@ const App: React.FC = () => {
     return saved ? JSON.parse(saved) : [];
   });
 
+  const fetchOrders = async () => {
+    const { data: sbOrders, error: oError } = await supabase
+      .from('orders')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (sbOrders && !oError) {
+      const mappedOrders: Order[] = sbOrders.map(o => ({
+        id: o.id,
+        date: o.created_at,
+        items: o.items,
+        total: Number(o.total),
+        senderName: o.sender_name,
+        senderPhone: o.sender_phone,
+        senderEmail: o.sender_email,
+        receiverName: o.receiver_name,
+        receiverPhone: o.receiver_phone,
+        deliveryAddress: o.delivery_address,
+        deliveryCoords: o.delivery_coords,
+        deliveryType: o.delivery_type as 'delivery' | 'pickup',
+        pickupBranch: o.pickup_branch,
+        gateCode: o.gate_code,
+        qrAccess: o.qr_access,
+        cardMessage: o.card_message,
+        status: o.status as any,
+        paymentStatus: o.payment_status as any,
+        stripePaymentIntentId: o.stripe_payment_id
+      }));
+      setOrders(mappedOrders);
+    }
+  };
+
   const [currentSeason, setCurrentSeason] = useState<Season>(() => {
     return (localStorage.getItem('asarum_season') as Season) || Season.VALENTINES;
   });
@@ -151,6 +185,35 @@ const App: React.FC = () => {
   const [announcement, setAnnouncement] = useState<string>(() => {
     return localStorage.getItem('asarum_announcement') || '¡Envíos gratis para este 14 de Febrero!';
   });
+
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth event:', event);
+      if (session?.user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', session.user.id)
+          .single();
+
+        if (profile) {
+          setUserProfile(profile as UserProfile);
+          setIsAdmin(true);
+        } else {
+          // If no profile yet but authenticated (e.g. first login)
+          // We might want to create a default or handle it
+          console.warn('User authenticated but no profile found');
+        }
+      } else {
+        setUserProfile(null);
+        setIsAdmin(false);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   useEffect(() => {
     localStorage.setItem('asarum_products', JSON.stringify(products));
@@ -190,36 +253,8 @@ const App: React.FC = () => {
         setProducts(mappedProducts);
       }
 
-      // 3. Fetch Orders (Admin only or for public lookup if needed)
-      const { data: sbOrders, error: oError } = await supabase
-        .from('orders')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (sbOrders && !oError) {
-        const mappedOrders: Order[] = sbOrders.map(o => ({
-          id: o.id,
-          date: o.created_at,
-          items: o.items,
-          total: Number(o.total),
-          senderName: o.sender_name,
-          senderPhone: o.sender_phone,
-          senderEmail: o.sender_email,
-          receiverName: o.receiver_name,
-          receiverPhone: o.receiver_phone,
-          deliveryAddress: o.delivery_address,
-          deliveryCoords: o.delivery_coords,
-          deliveryType: o.delivery_type as 'delivery' | 'pickup',
-          pickupBranch: o.pickup_branch,
-          gateCode: o.gate_code,
-          qrAccess: o.qr_access,
-          cardMessage: o.card_message,
-          status: o.status as any,
-          paymentStatus: o.payment_status as any,
-          stripePaymentIntentId: o.stripe_payment_id
-        }));
-        setOrders(mappedOrders);
-      }
+      // 3. Fetch Orders
+      await fetchOrders();
 
       // 4. Fetch Store Settings
       const { data: settings } = await supabase
@@ -235,6 +270,19 @@ const App: React.FC = () => {
     };
 
     initSupabase();
+
+    // 5. Setup Realtime Subscription
+    const subscription = supabase
+      .channel('orders_realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, (payload) => {
+        console.log('Realtime change:', payload);
+        fetchOrders(); // Refresh all to stay in sync
+      })
+      .subscribe();
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   return (
